@@ -1,0 +1,226 @@
+{
+  "info": {
+    "name": "HackOps AI Backend API",
+    "description": "Complete API Collection for HackOps AI Hackathon Management Platform",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "authToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register Organizer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Organizer Admin\",\n  \"email\": \"organizer@hackops.ai\",\n  \"password\": \"Password123!\",\n  \"role\": \"organizer\",\n  \"skills\": [\"Operations\", \"Management\"],\n  \"experience_level\": \"Advanced\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register" }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"organizer@hackops.ai\",\n  \"password\": \"Password123!\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login" }
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/auth/me" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feature 1 — AI Skill-Based Team Formation",
+      "item": [
+        {
+          "name": "POST /api/teams/match",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"participants\": []\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/teams/match" }
+          }
+        },
+        {
+          "name": "GET All Teams",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/teams" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feature 2 — AI Mentor Assistant",
+      "item": [
+        {
+          "name": "POST /api/mentor/chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"team_id\": \"<TEAM_ID>\",\n  \"message\": \"What are the rules regarding pre-existing code and sponsor tracks?\",\n  \"repo_link\": \"https://github.com/neuralcrafters/hackops-agent\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/mentor/chat" }
+          }
+        },
+        {
+          "name": "GET Chat History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/mentor/history/<TEAM_ID>" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feature 3 — AI Project Evaluation",
+      "item": [
+        {
+          "name": "POST /api/submissions/:id/evaluate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"repo_link\": \"https://github.com/neuralcrafters/hackops-agent\",\n  \"description\": \"Autonomous AI Hackathon Manager built with Node.js and Gemini API.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/submissions/<SUBMISSION_ID>/evaluate" }
+          }
+        },
+        {
+          "name": "GET Scorecard Side-By-Side",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/submissions/<SUBMISSION_ID>/evaluation" }
+          }
+        },
+        {
+          "name": "PATCH Judge Manual Score",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"judge_manual_score\": 9.5\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/submissions/<SUBMISSION_ID>/manual-score" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feature 4 — AI Idea Validation",
+      "item": [
+        {
+          "name": "POST /api/ideas/validate",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idea_description\": \"An automated RAG search engine for legal document analysis with realtime WebSockets\",\n  \"hours_remaining\": 18\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/ideas/validate" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feature 5 — AI Similarity & Plagiarism Detection",
+      "item": [
+        {
+          "name": "POST Check Submissions Similarity",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{authToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"threshold\": 0.85\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/submissions/check-similarity" }
+          }
+        },
+        {
+          "name": "GET Flagged Similarity Pairs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/submissions/similarity-flags" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Feature 6 — Live Engagement Score",
+      "item": [
+        {
+          "name": "POST Team Check-in",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/teams/<TEAM_ID>/check-in" }
+          }
+        },
+        {
+          "name": "GET Team Engagement Score",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/teams/<TEAM_ID>/engagement" }
+          }
+        },
+        {
+          "name": "GET Organizer Engagement Leaderboard",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "url": { "raw": "{{baseUrl}}/engagement/dashboard" }
+          }
+        }
+      ]
+    }
+  ]
+}

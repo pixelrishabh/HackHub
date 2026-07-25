@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String
+  email         String   @unique
+  password_hash String
+  role          String   @default("participant") // participant, mentor, judge, organizer, sponsor
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  profile       Profile?
+}
+
+model Profile {
+  id                String   @id @default(uuid())
+  user_id           String   @unique
+  user              User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  skills            String   @default("[]") // JSON string array
+  experience_level  String   @default("Intermediate")
+  interests         String   @default("[]") // JSON string array
+  timezone          String   @default("UTC")
+  project_goal_text String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Team {
+  id                   String            @id @default(uuid())
+  name                 String
+  member_ids           String            @default("[]") // JSON string array of user IDs
+  match_rationale_text String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  submissions          Submission[]
+  engagementEvents     EngagementEvent[]
+  mentorMessages       MentorMessage[]
+}
+
+model Submission {
+  id              String       @id @default(uuid())
+  team_id         String
+  team            Team         @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  repo_link       String
+  description     String
+  demo_video_link String?
+  status          String       @default("SUBMITTED") // DRAFT, SUBMITTED
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  evaluations     Evaluation[]
+}
+
+model Evaluation {
+  id                    String     @id @default(uuid())
+  submission_id         String
+  submission            Submission @relation(fields: [submission_id], references: [id], onDelete: Cascade)
+  originality_score     Float
+  technical_depth_score Float
+  completeness_score    Float
+  clarity_score         Float
+  ai_justification_text String
+  judge_manual_score    Float?
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+}
+
+model EngagementEvent {
+  id        String   @id @default(uuid())
+  team_id   String
+  team      Team     @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  user_id   String?
+  event_type String   // check_in, chat_message, submission_create, submission_update
+  timestamp DateTime @default(now())
+}
+
+model MentorMessage {
+  id        String   @id @default(uuid())
+  team_id   String
+  team      Team     @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  sender    String   // user, mentor
+  content   String
+  timestamp DateTime @default(now())
+}
