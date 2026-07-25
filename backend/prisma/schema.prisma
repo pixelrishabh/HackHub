@@ -17,6 +17,19 @@ model User {
   updatedAt     DateTime @updatedAt
 
   profile       Profile?
+  notifications Notification[]
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  user_id   String
+  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  type      String   // e.g., submission_created, evaluation_completed, etc.
+  title     String
+  message   String
+  is_read   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Profile {

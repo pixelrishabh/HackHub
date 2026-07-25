@@ -1,6 +1,7 @@
 const prisma = require('../config/db');
 const { evaluateSubmissionWithAI } = require('../services/ai.service');
 const { checkAllSubmissionsSimilarity } = require('../services/similarity.service');
+const notificationService = require('../services/notification.service');
 
 // Global cache or memory store for similarity check flags
 let similarityFlagsCache = [];
@@ -78,6 +79,15 @@ async function createOrUpdateSubmission(req, res) {
         event_type: eventType,
       },
     });
+    // Create notification for the user
+    await notificationService.createNotification(
+      req.user.id,
+      eventType,
+      existingSubmission ? 'Submission Updated' : 'Submission Created',
+      existingSubmission
+        ? 'Your submission has been updated successfully.'
+        : 'Your submission has been created successfully.'
+    );
 
     return res.status(existingSubmission ? 200 : 201).json({
       message: `Submission ${existingSubmission ? 'updated' : 'created'} successfully.`,
