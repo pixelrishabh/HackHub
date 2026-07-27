@@ -82,3 +82,10 @@ export async function getTeamDashboardDetailed(teamId) {
     method: 'GET',
   });
 }
+
+export async function addTeamMember(teamId, emailOrUsername) {
+  return apiFetch(`/teams/${teamId}/add-member`, {
+    method: 'POST',
+    body: JSON.stringify({ emailOrUsername }),
+  });
+}

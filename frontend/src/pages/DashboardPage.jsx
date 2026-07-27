@@ -3,38 +3,36 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { getFieldConfig } from '../config/fieldConfig';
 import { getAllTeams } from '../api/teams';
-import { checkInTeam, getTeamEngagement } from '../api/engagement';
+import { getTeamEngagement } from '../api/engagement';
 import { StatCard } from '../components/StatCard';
-import { EmptyState } from '../components/EmptyState';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Badge } from '../components/Badge';
 import {
-  Sparkles,
-  Users,
-  Bot,
-  CheckSquare,
-  FileCode,
-  ShieldCheck,
-  BarChart2,
-  ArrowRight,
-  User,
-  Zap,
-  CheckCircle2,
-  AlertCircle,
-  ExternalLink,
-  Award
+  Sparkles, Users, Bot, CheckSquare, FileCode, ShieldCheck,
+  BarChart2, ArrowRight, User, Flame, Award, AlertCircle, PlusCircle
 } from 'lucide-react';
 
 export function DashboardPage() {
-  const { user, isStaff, isOrganizer, role, primaryField } = useAuth();
+  const { user, isStaff, role, primaryField } = useAuth();
   const fieldConfig = getFieldConfig(primaryField);
 
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [checkInLoading, setCheckInLoading] = useState(false);
-  const [checkInMessage, setCheckInMessage] = useState('');
   const [engagementScore, setEngagementScore] = useState(null);
+
+  // Single-source check-in statistics from user profile
+  const profile = user?.profile || {};
+  const totalCheckIns = profile.check_in_count || 0;
+  const currentStreak = profile.check_in_streak || 0;
+
+  let unlockedBadgesCount = 0;
+  try {
+    const badgesArr = typeof profile.badges === 'string' ? JSON.parse(profile.badges || '[]') : (profile.badges || []);
+    unlockedBadgesCount = badgesArr.length;
+  } catch (e) {
+    unlockedBadgesCount = 0;
+  }
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -45,7 +43,6 @@ export function DashboardPage() {
         const userTeams = res.teams || [];
         setTeams(userTeams);
 
-        // If participant has a team, fetch engagement score
         if (userTeams.length > 0) {
           try {
             const engRes = await getTeamEngagement(userTeams[0].id);
@@ -64,21 +61,6 @@ export function DashboardPage() {
     loadDashboardData();
   }, []);
 
-  const handleCheckIn = async (teamId) => {
-    setCheckInLoading(true);
-    setCheckInMessage('');
-    try {
-      const res = await checkInTeam(teamId);
-      setCheckInMessage(res.message || 'Check-in successful! (+5 pts)');
-      const updatedEng = await getTeamEngagement(teamId);
-      setEngagementScore(updatedEng.total_engagement_score || 0);
-    } catch (err) {
-      setCheckInMessage(err.message || 'Check-in failed.');
-    } finally {
-      setCheckInLoading(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
@@ -88,66 +70,61 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      {/* Header Banner */}
-      <div className="bg-white rounded-2xl p-6 sm:p-8 border border-slate-200/80 shadow-sm relative overflow-hidden">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-fade-in">
+      
+      {/* Header Banner Card */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center space-x-3 mb-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                {isStaff ? 'Staff Administration Hub' : 'Participant Dashboard'}
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+                {isStaff ? 'Staff Administration Hub' : 'Participant Workspace'}
               </span>
               {!isStaff && (
-                <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${fieldConfig.accentBadgeBg}`}>
+                <span className={`px-3 py-1 text-xs font-bold rounded-full border ${fieldConfig.accentBadgeBg}`}>
                   Track: {fieldConfig.name}
                 </span>
               )}
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Welcome back, {user?.name || 'Hacker'} 👋
             </h1>
 
-            <p className="mt-1 text-sm text-slate-600 max-w-2xl">
+            <p className="mt-1 text-xs sm:text-sm text-slate-600 max-w-2xl">
               {isStaff
-                ? `You are logged in as an authorized ${role?.toUpperCase()}. Oversee AI team matching, project evaluations, similarity scanning, and live engagement.`
+                ? `Logged in as authorized ${role?.toUpperCase()}. Manage AI team matchmaking, evaluations, similarity scanning, and engagement.`
                 : fieldConfig.heroSubtitle}
             </p>
           </div>
 
-          {!isStaff && teams.length > 0 && (
-            <div className="flex items-center space-x-3 bg-surface p-3.5 rounded-xl border border-slate-200">
+          {!isStaff && (
+            <div className="flex items-center space-x-4 bg-surface p-4 rounded-2xl border border-slate-200/80">
               <div className="text-right">
-                <div className="text-xs font-semibold text-slate-500">Team Engagement</div>
-                <div className="text-xl font-extrabold text-secondary-600">{engagementScore ?? 0} pts</div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Team Activity</span>
+                <span className="text-xl font-black text-emerald-600">{engagementScore ?? 0} pts</span>
               </div>
-              <button
-                onClick={() => handleCheckIn(teams[0].id)}
-                disabled={checkInLoading}
-                className="px-3.5 py-2 bg-secondary-500 hover:bg-secondary-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center space-x-1 disabled:opacity-50"
+              <Link
+                to="/profile"
+                className="px-3.5 py-2 bg-primary-50 text-primary-700 hover:bg-primary-100 text-xs font-bold rounded-xl border border-primary-200 transition-colors flex items-center space-x-1.5"
+                title="View Profile Check-in & Streak"
               >
-                <Zap className="w-3.5 h-3.5" />
-                <span>{checkInLoading ? 'Checking in...' : 'Check-In (+5 pts)'}</span>
-              </button>
+                <User className="w-3.5 h-3.5" />
+                <span>My Profile</span>
+              </Link>
             </div>
           )}
         </div>
-
-        {checkInMessage && (
-          <div className="mt-4 p-2.5 bg-secondary-50 border border-secondary-200 text-secondary-800 text-xs font-semibold rounded-lg">
-            {checkInMessage}
-          </div>
-        )}
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-sm flex items-center space-x-2">
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-sm font-semibold flex items-center space-x-2">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* STAFF OVERVIEW METRICS */}
+      {/* STAFF DASHBOARD */}
       {isStaff ? (
         <div className="space-y-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -160,9 +137,9 @@ export function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Link
               to="/dashboard/team-matching"
-              className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all group"
+              className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group"
             >
-              <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                 <Users className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary-600 flex items-center justify-between">
@@ -174,27 +151,27 @@ export function DashboardPage() {
 
             <Link
               to="/dashboard/evaluation"
-              className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all group"
+              className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group"
             >
-              <div className="w-12 h-12 rounded-xl bg-secondary-50 text-secondary-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                 <CheckSquare className="w-6 h-6" />
               </div>
-              <h3 className="text-lg font-bold text-slate-900 group-hover:text-secondary-600 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-600 flex items-center justify-between">
                 <span>Project Evaluation Queue</span>
-                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-secondary-500" />
+                <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-emerald-500" />
               </h3>
               <p className="mt-1 text-xs text-slate-500">Run AI evaluation scorecards and enter manual judge scores.</p>
             </Link>
 
             <Link
               to="/dashboard/plagiarism"
-              className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all group"
+              className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group"
             >
-              <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+              <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary-600 flex items-center justify-between">
-                <span>Plagiarism & Similarity Radar</span>
+                <span>Plagiarism Radar</span>
                 <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-primary-500" />
               </h3>
               <p className="mt-1 text-xs text-slate-500">Scan project submissions for code overlap and similarity flags.</p>
@@ -202,40 +179,88 @@ export function DashboardPage() {
           </div>
         </div>
       ) : (
-        /* PARTICIPANT FIELD-ADAPTED OVERVIEW */
+        /* PARTICIPANT DASHBOARD */
         <div className="space-y-8">
-          {/* Own Team Details or Empty State */}
-          {teams.length === 0 ? (
-            <EmptyState
-              title={`No Team Assigned (${primaryField} Track)`}
-              description={fieldConfig.emptyStateCopy}
-              icon={Users}
-              actionLabel="Validate Your Project Idea First"
-              onAction={() => window.location.href = '/dashboard/idea-validator'}
-            />
-          ) : (
-            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div>
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Hackathon Team</span>
-                  <h3 className="text-xl font-bold text-slate-900">{teams[0].name}</h3>
-                </div>
-                <Badge variant="success">Assigned</Badge>
+          
+          {/* Top Metric Cards (Personal Check-ins & Streak read from Profile) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center">
+                <User className="w-6 h-6" />
               </div>
-
-              {teams[0].match_rationale_text && (
-                <div className="p-3 bg-primary-50/60 rounded-xl border border-primary-100 text-xs text-primary-900">
-                  <span className="font-bold">AI Match Rationale:</span> {teams[0].match_rationale_text}
-                </div>
-              )}
-
               <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Team Members ({teams[0].members?.length || 0})</h4>
+                <span className="text-2xl font-black text-slate-900 block leading-tight">{totalCheckIns}</span>
+                <span className="text-xs text-slate-500 font-semibold">Total Daily Check-ins</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                <Flame className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-2xl font-black text-slate-900 block leading-tight">{currentStreak} Days</span>
+                <span className="text-xs text-slate-500 font-semibold">Current Active Streak</span>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <Award className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="text-2xl font-black text-slate-900 block leading-tight">{unlockedBadgesCount}</span>
+                <span className="text-xs text-slate-500 font-semibold">Badges Unlocked</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Team Section */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Team Status</span>
+                <h3 className="text-xl font-bold text-slate-900">
+                  {teams.length > 0 ? teams[0].name : 'No Active Team'}
+                </h3>
+              </div>
+              {teams.length > 0 ? (
+                <Badge variant="success">Assigned</Badge>
+              ) : (
+                <Badge variant="warning">Unassigned</Badge>
+              )}
+            </div>
+
+            {teams.length === 0 ? (
+              <div className="p-6 bg-surface rounded-2xl border border-slate-200/60 text-center space-y-4">
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  You are not currently in a hackathon team. Browse open recruitment teams or create a new team to get started!
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Link
+                    to="/teams/browse"
+                    className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-xl"
+                  >
+                    Browse Open Teams
+                  </Link>
+                  <Link
+                    to="/teams/create"
+                    className="px-4 py-2 bg-primary-500 text-white text-xs font-bold rounded-xl"
+                  >
+                    Create New Team
+                  </Link>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Team Members ({teams[0].members?.length || (teams[0].member_ids || []).length})
+                </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                   {(teams[0].members || []).map((m) => (
-                    <div key={m.id} className="p-3 bg-surface rounded-xl border border-slate-200/70 flex items-center space-x-3">
-                      <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-xs">
-                        {m.name?.charAt(0)}
+                    <div key={m.id} className="p-3 bg-surface rounded-2xl border border-slate-200/70 flex items-center space-x-3">
+                      <div className="w-9 h-9 rounded-xl bg-primary-100 text-primary-700 font-bold flex items-center justify-center text-xs border border-primary-200">
+                        {m.name ? m.name.charAt(0) : 'U'}
                       </div>
                       <div className="overflow-hidden">
                         <div className="text-xs font-bold text-slate-800 truncate">{m.name}</div>
@@ -245,10 +270,10 @@ export function DashboardPage() {
                   ))}
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Quick Action Navigation tailored by Primary Field */}
+          {/* Quick Tools Grid */}
           <div>
             <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center space-x-2">
               <Sparkles className="w-5 h-5 text-primary-500" />
@@ -258,9 +283,9 @@ export function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Link
                 to="/dashboard/mentor"
-                className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all group"
+                className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                   <Bot className="w-6 h-6" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 group-hover:text-primary-600 flex items-center justify-between">
@@ -272,9 +297,9 @@ export function DashboardPage() {
 
               <Link
                 to="/dashboard/idea-validator"
-                className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all group"
+                className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                   <FileCode className="w-6 h-6" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 group-hover:text-emerald-600 flex items-center justify-between">
@@ -286,9 +311,9 @@ export function DashboardPage() {
 
               <Link
                 to="/dashboard/evaluation"
-                className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all group"
+                className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs hover:shadow-md transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+                <div className="w-12 h-12 rounded-2xl bg-primary-50 text-primary-600 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                   <CheckSquare className="w-6 h-6" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 group-hover:text-primary-600 flex items-center justify-between">
@@ -299,6 +324,7 @@ export function DashboardPage() {
               </Link>
             </div>
           </div>
+
         </div>
       )}
     </div>

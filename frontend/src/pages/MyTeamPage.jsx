@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Users, Shield, CheckCircle2, XCircle, LogOut, Sparkles, 
-  Clock, PlusCircle, AlertCircle, Award, FileCode, ChevronRight, User, AlertTriangle
+  Clock, PlusCircle, AlertCircle, Award, FileCode, ChevronRight, User, AlertTriangle, UserPlus, Search
 } from 'lucide-react';
-import { getAllTeams, getTeamDashboardDetailed, acceptJoinRequest, rejectJoinRequest, leaveTeam } from '../api/teams';
+import { getAllTeams, getTeamDashboardDetailed, acceptJoinRequest, rejectJoinRequest, leaveTeam, addTeamMember } from '../api/teams';
 import { useAuth } from '../hooks/useAuth';
 import { Badge } from '../components/Badge';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -15,6 +15,10 @@ export function MyTeamPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionMsg, setActionMsg] = useState(null);
+
+  // Direct Add Member state
+  const [addMemberQuery, setAddMemberQuery] = useState('');
+  const [addMemberLoading, setAddMemberLoading] = useState(false);
 
   // Leave team modal state
   const [showLeaveModal, setShowLeaveModal] = useState(false);
@@ -90,6 +94,25 @@ export function MyTeamPage() {
       setShowLeaveModal(false);
     } finally {
       setLeaveLoading(false);
+    }
+  };
+
+  // Handle Direct Add Member (Leader Only)
+  const handleAddMemberSubmit = async (e) => {
+    e.preventDefault();
+    if (!team || !addMemberQuery.trim()) return;
+    setAddMemberLoading(true);
+    setActionMsg(null);
+
+    try {
+      const res = await addTeamMember(team.id, addMemberQuery.trim());
+      setActionMsg({ type: 'success', text: res.message || 'Member added directly to team!' });
+      setAddMemberQuery('');
+      fetchMyTeam();
+    } catch (err) {
+      setActionMsg({ type: 'error', text: err.message || 'Failed to add member directly.' });
+    } finally {
+      setAddMemberLoading(false);
     }
   };
 
@@ -230,6 +253,45 @@ export function MyTeamPage() {
 
         {/* Column 1 & 2: Pending Requests & Team Roster */}
         <div className="lg:col-span-2 space-y-6">
+
+          {/* Leader Direct Add Member Card */}
+          {isLeader && (
+            <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
+                  <UserPlus className="w-5 h-5 text-primary-500" />
+                  <span>Direct Add Team Member</span>
+                </h3>
+                <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-full">
+                  Leader Action
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Directly add a participant to your team by entering their registered email address or username.
+              </p>
+
+              <form onSubmit={handleAddMemberSubmit} className="flex flex-col sm:flex-row gap-3 pt-1">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    required
+                    value={addMemberQuery}
+                    onChange={(e) => setAddMemberQuery(e.target.value)}
+                    placeholder="Enter email or username (e.g. alex@gmail.com)"
+                    className="w-full px-4 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:outline-none bg-surface/50"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={addMemberLoading || !addMemberQuery.trim()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center space-x-1.5 disabled:opacity-50 flex-shrink-0"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>{addMemberLoading ? 'Adding Member...' : 'Add Member'}</span>
+                </button>
+              </form>
+            </div>
+          )}
 
           {/* Pending Requests Section (Leader Only) */}
           {isLeader && (

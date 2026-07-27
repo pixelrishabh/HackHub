@@ -19,6 +19,7 @@ router.delete('/:id/join-request', authenticate, teamController.cancelJoinReques
 router.post('/:id/join-request/:requestId/accept', authenticate, teamController.acceptJoinRequest);
 router.post('/:id/join-request/:requestId/reject', authenticate, teamController.rejectJoinRequest);
 router.post('/:id/leave', authenticate, teamController.leaveTeam);
+router.post('/:id/add-member', authenticate, teamController.addTeamMember);
 router.get('/:id/requests', authenticate, teamController.getTeamRequests);
 router.get('/:id/compatibility', authenticate, teamController.getTeamCompatibility);
 router.get('/:id/dashboard', authenticate, teamController.getTeamDashboardDetailed);

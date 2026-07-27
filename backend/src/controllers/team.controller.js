@@ -726,6 +726,90 @@ async function getTeamDashboardDetailed(req, res) {
   }
 }
 
+/**
+ * POST /api/teams/:id/add-member
+ * Leader directly adds a member by email or username
+ */
+async function addTeamMember(req, res) {
+  try {
+    const { id } = req.params;
+    const { emailOrUsername, email, username } = req.body;
+    const targetQuery = (emailOrUsername || email || username || '').trim();
+    const currentUserId = req.user.id;
+
+    if (!targetQuery) {
+      return res.status(400).json({ error: 'Email or username is required.' });
+    }
+
+    const team = await prisma.team.findUnique({ where: { id } });
+    if (!team) {
+      return res.status(404).json({ error: 'Team not found.' });
+    }
+
+    let memberIds = [];
+    try { memberIds = JSON.parse(team.member_ids || '[]'); } catch (e) {}
+
+    // Leader verification
+    const isLeader = team.leader_id ? (team.leader_id === currentUserId) : (memberIds[0] === currentUserId);
+    if (!isLeader) {
+      return res.status(403).json({ error: 'Forbidden. Only the team leader can add members directly.' });
+    }
+
+    // Capacity check
+    if (memberIds.length >= (team.max_members || 4)) {
+      return res.status(400).json({ error: 'Team is already at maximum capacity.' });
+    }
+
+    // Lookup target user by email or name
+    const targetUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: { equals: targetQuery } },
+          { name: { equals: targetQuery } },
+        ],
+      },
+      select: { id: true, name: true, email: true, role: true, profile: true },
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ error: `User "${targetQuery}" not found. Please verify the email or username.` });
+    }
+
+    // Check if target user is already in this team
+    if (memberIds.includes(targetUser.id)) {
+      return res.status(400).json({ error: `User "${targetUser.name}" is already a member of this team.` });
+    }
+
+    // Check if target user belongs to another active team
+    const activeTeam = await getUserActiveTeam(targetUser.id);
+    if (activeTeam) {
+      return res.status(400).json({ 
+        error: `User "${targetUser.name}" is already a member of team "${activeTeam.name}".` 
+      });
+    }
+
+    // Add target user to member_ids
+    memberIds.push(targetUser.id);
+
+    const updatedTeam = await prisma.team.update({
+      where: { id },
+      data: { member_ids: JSON.stringify(memberIds) },
+    });
+
+    return res.status(200).json({
+      message: `Successfully added ${targetUser.name} to the team!`,
+      team: {
+        ...updatedTeam,
+        member_ids: memberIds,
+      },
+      added_user: targetUser,
+    });
+  } catch (error) {
+    console.error('[TeamController] addTeamMember Error:', error);
+    return res.status(500).json({ error: 'Failed to add team member.' });
+  }
+}
+
 module.exports = {
   matchTeams,
   getAllTeams,
@@ -740,5 +824,6 @@ module.exports = {
   getTeamRequests,
   getTeamCompatibility,
   getTeamDashboardDetailed,
+  addTeamMember,
 };
 

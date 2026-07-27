@@ -97,9 +97,9 @@ export function Navbar() {
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
+          {/* Desktop Navigation Links (Single-Row Active Indicator) */}
           {isAuthenticated && (
-            <nav className="hidden md:flex items-center space-x-1 lg:space-x-2">
+            <nav className="hidden md:flex items-center space-x-1 overflow-x-auto no-scrollbar py-1">
               {navLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
@@ -107,14 +107,17 @@ export function Navbar() {
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`relative flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 flex-shrink-0 ${
                       isActive
-                        ? 'bg-primary-50 text-primary-600 font-semibold'
+                        ? 'bg-primary-50/90 text-primary-600 font-extrabold border border-primary-200/80 shadow-2xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                     }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-primary-500' : 'text-slate-400'}`} />
                     <span>{link.label}</span>
+                    {isActive && (
+                      <span className="absolute bottom-0 left-3 right-3 h-0.5 bg-primary-500 rounded-full"></span>
+                    )}
                   </Link>
                 );
               })}
