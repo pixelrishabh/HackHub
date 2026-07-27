@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { RoleGuard } from './components/RoleGuard';
 import { Navbar } from './components/Navbar';
 
@@ -14,15 +15,17 @@ import { ProjectEvalPage } from './pages/ProjectEvalPage';
 import { IdeaValidatorPage } from './pages/IdeaValidatorPage';
 import { PlagiarismPage } from './pages/PlagiarismPage';
 import { EngagementPage } from './pages/EngagementPage';
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <div className="min-h-screen flex flex-col bg-surface text-slate-800 font-sans">
-          <Navbar />
-          <main className="flex-1">
-            <Routes>
+      <LanguageProvider>
+        <BrowserRouter>
+          <div className="min-h-screen flex flex-col bg-surface text-slate-800 font-sans">
+            <Navbar />
+            <main className="flex-1">
+              <Routes>
               {/* Public Routes */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
@@ -92,12 +95,22 @@ export default function App() {
                 }
               />
 
+              <Route
+                path="/profile"
+                element={
+                  <RoleGuard allowedRoles={['participant', 'organizer', 'judge', 'mentor', 'sponsor']}>
+                    <ProfilePage />
+                  </RoleGuard>
+                }
+              />
+
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
         </div>
       </BrowserRouter>
-    </AuthProvider>
-  );
+    </LanguageProvider>
+  </AuthProvider>
+);
 }

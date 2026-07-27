@@ -287,50 +287,96 @@ REQUIRED JSON FORMAT:
 }
 
 /**
- * FEATURE 4 — AI Idea Validation
+ * FEATURE 4 — AI-Powered Idea Validator & Product Evaluation
  * @param {object} params
  * @param {string} params.idea_description
  * @param {number} params.hours_remaining
- * @returns {Promise<{feasibility: "green"|"yellow"|"red", originality: string, scope_note: string, suggested_mvp: string}>}
+ * @returns {Promise<{overall_score: number, scores: object, summary: string, strengths: string[], weaknesses: string[], improvement_suggestions: string[], feasibility: string, originality: string, scope_note: string, suggested_mvp: string}>}
  */
 async function validateIdeaWithAI({ idea_description, hours_remaining }) {
   const prompt = `
-You are an AI Hackathon Strategist & Product Validator.
-Assess the feasibility and scope of the following hackathon project idea:
+You are an expert AI Hackathon Strategist, Product Validator, and Venture Assessor.
+Evaluate the following hackathon project idea across 7 key dimensions:
 
 Idea Description: "${idea_description}"
 Hours Remaining in Hackathon: ${hours_remaining} hours
 
-INSTRUCTIONS:
-1. Determine feasibility status ("green" for highly realistic, "yellow" for tight/moderate risk, "red" for overscoped/high risk given hours remaining).
-2. Assess originality compared to existing tools.
-3. Write a scope note explaining the feasibility decision.
-4. Suggest a stripped-down MVP cut focused on core functionality.
+INSTRUCTIONS & DIMENSIONS TO EVALUATE:
+1. Innovation: Originality, uniqueness, and creative problem-solving approach (0-100).
+2. Feasibility: Realistic buildability given ${hours_remaining} hours remaining (0-100).
+3. Market Potential: Real-world value, target audience size, and problem relevance (0-100).
+4. Technical Complexity: Architectural depth, engineering effort, and technical merit (0-100).
+5. Scalability: Potential for future growth, user expansion, and technical scaling (0-100).
+6. Clarity: Clear problem statement, clear user flow, and well-articulated concept (0-100).
+7. Overall Quality: Holistic rating combining execution potential and presentation (0-100).
+
+Return a concise executive summary, 2-3 key strengths, 2-3 key weaknesses/risks, 2-3 actionable improvement suggestions, and feasibility status ("green", "yellow", or "red").
 
 Output STRICT VALID JSON ONLY. No markdown, no preambles.
 
 REQUIRED JSON FORMAT:
 {
+  "overall_score": 85,
+  "scores": {
+    "innovation": 88,
+    "feasibility": 80,
+    "market_potential": 85,
+    "technical_complexity": 82,
+    "scalability": 84,
+    "clarity": 90,
+    "overall_quality": 85
+  },
+  "summary": "Innovative product concept targeting a clear pain point with strong technical feasibility within the hackathon timeline.",
+  "strengths": [
+    "Clear value proposition addressing real user pain points.",
+    "High technical feasibility with manageable core API scope."
+  ],
+  "weaknesses": [
+    "Potential competition from established developer tooling.",
+    "Tight timeframe to complete full UI polish."
+  ],
+  "improvement_suggestions": [
+    "Focus first on a rock-solid MVP core workflow.",
+    "Add automated fallback mechanisms for third-party API dependencies."
+  ],
   "feasibility": "green",
-  "originality": "Fresh approach combining automated workflows with agentic feedback.",
-  "scope_note": "With 24 hours remaining, building the core 3 endpoints is achievable.",
-  "suggested_mvp": "Focus on the primary API pipeline first; defer custom frontend dashboards until backend logic is stable."
+  "originality": "Fresh approach combining automated workflows with intelligent feedback.",
+  "scope_note": "Building the primary MVP pipeline is realistic within remaining time.",
+  "suggested_mvp": "Focus on primary core pipeline first; defer secondary dashboard analytics."
 }
 `;
 
   try {
     const rawResponse = await callLLM(prompt);
     const parsed = safeParseJSON(rawResponse);
-    if (parsed && ['green', 'yellow', 'red'].includes(parsed.feasibility?.toLowerCase())) {
+    if (parsed && parsed.scores && typeof parsed.overall_score === 'number') {
+      const feasibilityStatus = ['green', 'yellow', 'red'].includes(parsed.feasibility?.toLowerCase()) 
+        ? parsed.feasibility.toLowerCase() 
+        : (parsed.overall_score >= 75 ? 'green' : (parsed.overall_score >= 50 ? 'yellow' : 'red'));
+
       return {
-        feasibility: parsed.feasibility.toLowerCase(),
-        originality: parsed.originality || 'Standard hackathon concept.',
-        scope_note: parsed.scope_note || 'Scope evaluated against remaining time.',
-        suggested_mvp: parsed.suggested_mvp || 'Focus on core user journey.',
+        overall_score: Number(parsed.overall_score),
+        scores: {
+          innovation: Number(parsed.scores.innovation || 80),
+          feasibility: Number(parsed.scores.feasibility || 80),
+          market_potential: Number(parsed.scores.market_potential || 80),
+          technical_complexity: Number(parsed.scores.technical_complexity || 75),
+          scalability: Number(parsed.scores.scalability || 80),
+          clarity: Number(parsed.scores.clarity || 85),
+          overall_quality: Number(parsed.scores.overall_quality || 80),
+        },
+        summary: String(parsed.summary || 'Idea evaluated with AI multidimensional criteria.'),
+        strengths: Array.isArray(parsed.strengths) ? parsed.strengths : ['Innovative concept with strong relevance.'],
+        weaknesses: Array.isArray(parsed.weaknesses) ? parsed.weaknesses : ['Requires tight scope management.'],
+        improvement_suggestions: Array.isArray(parsed.improvement_suggestions) ? parsed.improvement_suggestions : ['Focus on MVP demo path first.'],
+        feasibility: feasibilityStatus,
+        originality: String(parsed.originality || 'Fresh perspective with practical utility.'),
+        scope_note: String(parsed.scope_note || `Scope evaluated for ${hours_remaining} hours remaining.`),
+        suggested_mvp: String(parsed.suggested_mvp || 'Build the essential end-to-end user flow.'),
       };
     }
   } catch (err) {
-    console.warn('[AIService] LLM Idea Validation failed or key missing. Returning heuristic validation.');
+    console.warn('[AIService] LLM Idea Validation failed or key missing. Returning fallback heuristic validation:', err.message);
   }
 
   // Heuristic Idea Validator Fallback
@@ -339,16 +385,42 @@ REQUIRED JSON FORMAT:
 
   let feasibility = 'green';
   let scopeNote = `Given ${hours} hours remaining, the project scope is manageable for a standard team.`;
+  let score = 82;
 
   if (hours < 12) {
     feasibility = descLen > 250 ? 'red' : 'yellow';
-    scopeNote = `With only ${hours} hours left, the current feature set carries high delivery risk. High priority to trim non-essential features.`;
+    scopeNote = `With only ${hours} hours left, the current feature set carries delivery risk. High priority to trim non-essential features.`;
+    score = descLen > 250 ? 58 : 72;
   } else if (hours < 24 && descLen > 400) {
     feasibility = 'yellow';
     scopeNote = `Moderate time pressure (${hours}h). Trim background workers and non-critical integrations.`;
+    score = 76;
   }
 
   return {
+    overall_score: score,
+    scores: {
+      innovation: Math.min(95, Math.max(65, 75 + (descLen > 150 ? 10 : 0))),
+      feasibility: feasibility === 'green' ? 88 : (feasibility === 'yellow' ? 70 : 50),
+      market_potential: 80,
+      technical_complexity: Math.min(90, Math.max(60, 70 + (descLen > 200 ? 15 : 0))),
+      scalability: 78,
+      clarity: descLen > 100 ? 85 : 70,
+      overall_quality: score,
+    },
+    summary: `Heuristic evaluation: ${scopeNote}`,
+    strengths: [
+      'Addresses a defined problem statement.',
+      'Clear core value proposition for hackathon audience.',
+    ],
+    weaknesses: [
+      'Delivery risk under tight time constraints.',
+      'Requires prioritizing key user flows over secondary polish.',
+    ],
+    improvement_suggestions: [
+      'Lock in MVP core API endpoints first.',
+      'Prepare demo script and backup video before final hour.',
+    ],
     feasibility,
     originality: 'Promising concept with strong practical utility for target users.',
     scope_note: scopeNote,

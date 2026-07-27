@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useLanguage } from '../context/LanguageContext';
 import { AVAILABLE_FIELDS } from '../config/fieldConfig';
 import {
   Sparkles,
@@ -16,16 +17,19 @@ import {
   X,
   User,
   Shield,
-  UserPlus
+  UserPlus,
+  Globe
 } from 'lucide-react';
 import { Modal } from './Modal';
 
 export function Navbar() {
   const { user, role, isAuthenticated, isStaff, isOrganizer, primaryField, setPrimaryField, logout, createStaff } = useAuth();
+  const { language, changeLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
 
   const [fieldMenuOpen, setFieldMenuOpen] = useState(false);
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [staffModalOpen, setStaffModalOpen] = useState(false);
 
@@ -60,13 +64,14 @@ export function Navbar() {
 
   const navLinks = isAuthenticated
     ? [
-        { path: '/dashboard', label: 'Overview', icon: Sparkles },
-        ...(isStaff ? [{ path: '/dashboard/team-matching', label: 'AI Team Matcher', icon: Users }] : []),
-        { path: '/dashboard/mentor', label: 'AI Mentor', icon: Bot },
-        { path: '/dashboard/evaluation', label: isStaff ? 'Evaluations' : 'My Submission', icon: CheckSquare },
-        { path: '/dashboard/idea-validator', label: 'Idea Validator', icon: FileCode },
-        ...(isStaff ? [{ path: '/dashboard/plagiarism', label: 'Plagiarism Radar', icon: ShieldCheck }] : []),
-        ...(isStaff ? [{ path: '/dashboard/engagement', label: 'Engagement', icon: BarChart2 }] : []),
+        { path: '/dashboard', label: t('nav_dashboard'), icon: Sparkles },
+        ...(isStaff ? [{ path: '/dashboard/team-matching', label: t('nav_team_matching'), icon: Users }] : []),
+        { path: '/dashboard/mentor', label: t('nav_ai_mentor'), icon: Bot },
+        { path: '/dashboard/evaluation', label: isStaff ? t('nav_evaluations') : 'My Submission', icon: CheckSquare },
+        { path: '/dashboard/idea-validator', label: t('nav_idea_validator'), icon: FileCode },
+        ...(isStaff ? [{ path: '/dashboard/plagiarism', label: t('nav_plagiarism'), icon: ShieldCheck }] : []),
+        ...(isStaff ? [{ path: '/dashboard/engagement', label: t('nav_engagement'), icon: BarChart2 }] : []),
+        { path: '/profile', label: t('nav_profile'), icon: User },
       ]
     : [];
 
@@ -175,24 +180,29 @@ export function Navbar() {
                   </div>
                 )}
 
-                {/* User Info & Logout */}
-                <div className="flex items-center space-x-2 border-l border-slate-200 pl-3">
-                  <div className="flex items-center space-x-2 text-slate-700">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 font-semibold text-xs">
+                {/* User Profile Link & Logout */}
+                <div className="flex items-center space-x-3 border-l border-slate-200 pl-3">
+                  <Link
+                    to="/profile"
+                    className="flex items-center space-x-2 text-slate-700 hover:text-primary-600 transition-colors group"
+                    title={t('nav_profile')}
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary-100 border border-primary-200 text-primary-700 flex items-center justify-center font-bold text-xs group-hover:scale-105 transition-transform">
                       {user?.name?.charAt(0) || <User className="w-4 h-4" />}
                     </div>
-                    <div className="flex flex-col text-left">
-                      <span className="text-xs font-semibold text-slate-800 leading-tight">{user?.name}</span>
+                    <div className="flex flex-col text-left hidden lg:flex">
+                      <span className="text-xs font-semibold text-slate-800 leading-tight group-hover:text-primary-600">{user?.name}</span>
                       <span className="text-[10px] text-slate-400 leading-tight">{user?.email}</span>
                     </div>
-                  </div>
+                  </Link>
+
                   <button
                     onClick={() => {
                       logout();
-                      navigate('/login');
+                      navigate('/login', { replace: true });
                     }}
                     className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    title="Log Out"
+                    title={t('nav_logout')}
                   >
                     <LogOut className="w-4 h-4" />
                   </button>

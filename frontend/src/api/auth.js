@@ -26,3 +26,16 @@ export async function getCurrentUser() {
     method: 'GET',
   });
 }
+
+export async function checkInUser() {
+  return apiFetch('/auth/check-in', {
+    method: 'POST',
+  });
+}
+
+export async function updateProfile(data) {
+  return apiFetch('/auth/profile', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}

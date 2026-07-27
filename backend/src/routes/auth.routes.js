@@ -16,6 +16,8 @@ router.post('/register', authLimiter, authController.register);
 router.post('/login', authLimiter, authController.login);
 router.post('/create-staff', authenticate, authorize(['organizer']), authController.createStaff);
 router.get('/me', authenticate, authController.getMe);
+router.post('/check-in', authenticate, authController.checkInUser);
+router.put('/profile', authenticate, authController.updateProfile);
 
 module.exports = router;
 

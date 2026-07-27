@@ -126,6 +126,13 @@ export function AuthProvider({ children }) {
     register,
     createStaff,
     logout,
+    updateUserSession: (updatedUser) => {
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      const field = parsePrimaryField(updatedUser);
+      setPrimaryField(field);
+      localStorage.setItem('primaryField', field);
+    },
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

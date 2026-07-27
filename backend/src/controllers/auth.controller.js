@@ -176,10 +176,204 @@ async function login(req, res) {
  */
 async function getMe(req, res) {
   try {
-    const { password_hash: _, ...safeUser } = req.user;
-    return res.status(200).json({ user: safeUser });
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    // Check if user checked in today
+    const now = new Date();
+    const lastCheckIn = user.profile?.last_check_in_at ? new Date(user.profile.last_check_in_at) : null;
+    const isCheckedInToday = !!(lastCheckIn && 
+      lastCheckIn.getUTCFullYear() === now.getUTCFullYear() &&
+      lastCheckIn.getUTCMonth() === now.getUTCMonth() &&
+      lastCheckIn.getUTCDate() === now.getUTCDate()
+    );
+
+    const { password_hash: _, ...safeUser } = user;
+    return res.status(200).json({
+      user: {
+        ...safeUser,
+        is_checked_in_today: isCheckedInToday,
+      },
+    });
   } catch (error) {
+    console.error('[AuthController] getMe Error:', error);
     return res.status(500).json({ error: 'Failed to fetch user details.' });
+  }
+}
+
+/**
+ * Idempotent Daily User Check-in
+ * Endpoint: POST /api/auth/check-in
+ */
+async function checkInUser(req, res) {
+  try {
+    const userId = req.user.id;
+    let user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    if (!user.profile) {
+      const newProfile = await prisma.profile.create({
+        data: { user_id: userId },
+      });
+      user.profile = newProfile;
+    }
+
+    const now = new Date();
+    const lastCheckIn = user.profile.last_check_in_at ? new Date(user.profile.last_check_in_at) : null;
+
+    // Check if already checked in today (UTC date)
+    const isSameDay = !!(lastCheckIn &&
+      lastCheckIn.getUTCFullYear() === now.getUTCFullYear() &&
+      lastCheckIn.getUTCMonth() === now.getUTCMonth() &&
+      lastCheckIn.getUTCDate() === now.getUTCDate()
+    );
+
+    let badgesList = [];
+    try {
+      badgesList = JSON.parse(user.profile.badges || '[]');
+    } catch (e) {
+      badgesList = [];
+    }
+
+    if (isSameDay) {
+      const { password_hash: _, ...safeUser } = user;
+      return res.status(200).json({
+        already_checked_in: true,
+        message: 'You have already checked in today!',
+        user: {
+          ...safeUser,
+          is_checked_in_today: true,
+        },
+      });
+    }
+
+    // Calculate Streak
+    let newStreak = 1;
+    if (lastCheckIn) {
+      const diffMs = now.getTime() - lastCheckIn.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      if (diffHours <= 48) {
+        newStreak = (user.profile.check_in_streak || 0) + 1;
+      }
+    }
+
+    const newCount = (user.profile.check_in_count || 0) + 1;
+
+    // Award Badges
+    if (newCount >= 1 && !badgesList.includes('First Step')) badgesList.push('First Step');
+    if (newStreak >= 3 && !badgesList.includes('Streak Master')) badgesList.push('Streak Master');
+    if (newCount >= 5 && !badgesList.includes('Hackathon Veteran')) badgesList.push('Hackathon Veteran');
+    if (newStreak >= 7 && !badgesList.includes('Legendary')) badgesList.push('Legendary');
+
+    const updatedProfile = await prisma.profile.update({
+      where: { user_id: userId },
+      data: {
+        last_check_in_at: now,
+        check_in_count: newCount,
+        check_in_streak: newStreak,
+        badges: JSON.stringify(badgesList),
+      },
+    });
+
+    // Also log engagement event for participant's team if assigned to one
+    const teams = await prisma.team.findMany();
+    const userTeam = teams.find(t => {
+      try {
+        const members = JSON.parse(t.member_ids || '[]');
+        return Array.isArray(members) && members.includes(userId);
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (userTeam) {
+      await prisma.engagementEvent.create({
+        data: {
+          team_id: userTeam.id,
+          user_id: userId,
+          event_type: 'check_in',
+        },
+      }).catch(e => console.warn('[CheckIn] Engagement logging warn:', e.message));
+    }
+
+    const updatedUser = {
+      ...user,
+      profile: updatedProfile,
+      is_checked_in_today: true,
+    };
+    delete updatedUser.password_hash;
+
+    return res.status(200).json({
+      already_checked_in: false,
+      message: `Daily check-in successful! (+1 streak, total: ${newCount})`,
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('[AuthController] checkInUser Error:', error);
+    return res.status(500).json({ error: 'Failed to process daily check-in.' });
+  }
+}
+
+/**
+ * Update Profile Details
+ * Endpoint: PUT /api/auth/profile
+ */
+async function updateProfile(req, res) {
+  try {
+    const userId = req.user.id;
+    const { name, avatar_url, skills, experience_level, interests, timezone, project_goal_text, preferred_language } = req.body;
+
+    if (name) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { name },
+      });
+    }
+
+    const updateData = {};
+    if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
+    if (skills !== undefined) updateData.skills = Array.isArray(skills) ? JSON.stringify(skills) : skills;
+    if (experience_level !== undefined) updateData.experience_level = experience_level;
+    if (interests !== undefined) updateData.interests = Array.isArray(interests) ? JSON.stringify(interests) : interests;
+    if (timezone !== undefined) updateData.timezone = timezone;
+    if (project_goal_text !== undefined) updateData.project_goal_text = project_goal_text;
+    if (preferred_language !== undefined) updateData.preferred_language = preferred_language;
+
+    const profile = await prisma.profile.upsert({
+      where: { user_id: userId },
+      update: updateData,
+      create: {
+        user_id: userId,
+        ...updateData,
+      },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { profile: true },
+    });
+
+    const { password_hash: _, ...safeUser } = user;
+
+    return res.status(200).json({
+      message: 'Profile updated successfully',
+      user: safeUser,
+    });
+  } catch (error) {
+    console.error('[AuthController] updateProfile Error:', error);
+    return res.status(500).json({ error: 'Failed to update profile.' });
   }
 }
 
@@ -188,5 +382,7 @@ module.exports = {
   createStaff,
   login,
   getMe,
+  checkInUser,
+  updateProfile,
 };
 
