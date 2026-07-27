@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const hackathonConfig = require('../config/hackathon_config.json');
 
@@ -47,33 +48,50 @@ async function callLLM(prompt, systemInstruction = '') {
 
   if (geminiKey && geminiKey !== 'your_gemini_api_key_here') {
     const candidateModels = [
-      'gemini-1.5-flash',
-      'gemini-1.5-flash-latest',
+      'gemma-4-31b-it',
+      'gemma-4-26b-a4b-it',
+      'gemini-3.1-flash-lite',
       'gemini-2.0-flash',
-      'gemini-2.0-flash-exp',
-      'gemini-1.5-pro',
-      'gemini-pro',
+      'gemini-2.0-flash-lite',
     ];
 
     const genAI = new GoogleGenerativeAI(geminiKey);
     let lastErr = null;
 
     for (const modelName of candidateModels) {
-      try {
-        const model = genAI.getGenerativeModel({
-          model: modelName,
-          systemInstruction: systemInstruction || 'You are HackHub AI, an expert hackathon assistant.',
-        });
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const isGemma = modelName.toLowerCase().startsWith('gemma');
+          const modelOptions = { model: modelName };
+          
+          if (!isGemma && systemInstruction) {
+            modelOptions.systemInstruction = systemInstruction;
+          }
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-        if (text) return text;
-      } catch (err) {
-        lastErr = err;
+          const model = genAI.getGenerativeModel(modelOptions);
+          const finalPrompt = isGemma && systemInstruction 
+            ? `${systemInstruction}\n\nUser Question: ${prompt}` 
+            : prompt;
+
+          const result = await model.generateContent(finalPrompt);
+          const response = await result.response;
+          const text = response.text();
+          if (text) return text;
+        } catch (err) {
+          lastErr = err;
+          const is429 = err.status === 429 || (err.message && err.message.includes('429'));
+          if (is429) {
+            console.warn(`[AIService] Gemini API Quota 429 for '${modelName}' (attempt ${attempt}/2). Waiting 1.5s...`);
+            if (attempt === 1) {
+              await new Promise((r) => setTimeout(r, 1500));
+              continue;
+            }
+          }
+          break; // Break inner retry loop on non-429 error or after retry
+        }
       }
     }
-    console.warn('[AIService] All Gemini models failed:', lastErr?.message);
+    console.warn('[AIService] Gemini API call failed across candidates:', lastErr?.message);
     throw lastErr || new Error('Gemini API call failed.');
   }
 
@@ -181,7 +199,7 @@ Respond directly as the mentor. Be concise, actionable, and encouraging.
     const rawResponse = await callLLM(userMessage, systemPrompt);
     return rawResponse.trim();
   } catch (err) {
-    console.warn('[AIService] LLM Mentor Chat call failed or key missing. Returning fallback mentor response.');
+    console.warn('[AIService] LLM Mentor Chat call failed:', err.message || err);
     
     // Rule & FAQ aware fallback response generator
     const msgLower = userMessage.toLowerCase();
