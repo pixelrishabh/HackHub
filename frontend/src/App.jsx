@@ -14,6 +14,7 @@ import { AIMentorPage } from './pages/AIMentorPage';
 import { ProjectEvalPage } from './pages/ProjectEvalPage';
 import { IdeaValidatorPage } from './pages/IdeaValidatorPage';
 import { PlagiarismPage } from './pages/PlagiarismPage';
+import { EngagementPage } from './pages/EngagementPage';
 import { BrowseTeamsPage } from './pages/BrowseTeamsPage';
 import { CreateTeamPage } from './pages/CreateTeamPage';
 import { MyTeamPage } from './pages/MyTeamPage';
