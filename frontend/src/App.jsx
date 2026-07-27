@@ -14,7 +14,9 @@ import { AIMentorPage } from './pages/AIMentorPage';
 import { ProjectEvalPage } from './pages/ProjectEvalPage';
 import { IdeaValidatorPage } from './pages/IdeaValidatorPage';
 import { PlagiarismPage } from './pages/PlagiarismPage';
-import { EngagementPage } from './pages/EngagementPage';
+import { BrowseTeamsPage } from './pages/BrowseTeamsPage';
+import { CreateTeamPage } from './pages/CreateTeamPage';
+import { MyTeamPage } from './pages/MyTeamPage';
 import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
@@ -91,6 +93,33 @@ export default function App() {
                 element={
                   <RoleGuard allowedRoles={['organizer', 'judge', 'mentor']}>
                     <EngagementPage />
+                  </RoleGuard>
+                }
+              />
+
+              <Route
+                path="/teams/browse"
+                element={
+                  <RoleGuard allowedRoles={['participant', 'organizer', 'judge', 'mentor', 'sponsor']}>
+                    <BrowseTeamsPage />
+                  </RoleGuard>
+                }
+              />
+
+              <Route
+                path="/teams/create"
+                element={
+                  <RoleGuard allowedRoles={['participant', 'organizer', 'judge', 'mentor', 'sponsor']}>
+                    <CreateTeamPage />
+                  </RoleGuard>
+                }
+              />
+
+              <Route
+                path="/teams/my-team"
+                element={
+                  <RoleGuard allowedRoles={['participant', 'organizer', 'judge', 'mentor', 'sponsor']}>
+                    <MyTeamPage />
                   </RoleGuard>
                 }
               />

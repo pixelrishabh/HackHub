@@ -18,7 +18,8 @@ import {
   User,
   Shield,
   UserPlus,
-  Globe
+  Globe,
+  Search
 } from 'lucide-react';
 import { Modal } from './Modal';
 
@@ -65,6 +66,8 @@ export function Navbar() {
   const navLinks = isAuthenticated
     ? [
         { path: '/dashboard', label: t('nav_dashboard'), icon: Sparkles },
+        { path: '/teams/browse', label: t('nav_browse_teams', 'Browse Teams'), icon: Search },
+        { path: '/teams/my-team', label: t('nav_my_team', 'My Team'), icon: Users },
         ...(isStaff ? [{ path: '/dashboard/team-matching', label: t('nav_team_matching'), icon: Users }] : []),
         { path: '/dashboard/mentor', label: t('nav_ai_mentor'), icon: Bot },
         { path: '/dashboard/evaluation', label: isStaff ? t('nav_evaluations') : 'My Submission', icon: CheckSquare },

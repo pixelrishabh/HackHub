@@ -2,6 +2,8 @@ export const translations = {
   en: {
     // Navigation
     nav_dashboard: "Dashboard",
+    nav_browse_teams: "Browse Teams",
+    nav_my_team: "My Team",
     nav_team_matching: "Team Matcher",
     nav_ai_mentor: "AI Mentor",
     nav_idea_validator: "Idea Validator",

@@ -428,10 +428,108 @@ REQUIRED JSON FORMAT:
   };
 }
 
+
+/**
+ * Calculate team compatibility for a specific user profile against a team's required skills and tech stack using LLM.
+ * @param {object} params
+ * @param {object} params.userProfile
+ * @param {object} params.team
+ * @returns {Promise<object>}
+ */
+async function calculateTeamCompatibilityWithAI({ userProfile, team }) {
+  let userSkills = [];
+  try {
+    userSkills = typeof userProfile?.skills === 'string' ? JSON.parse(userProfile.skills || '[]') : (userProfile?.skills || []);
+  } catch (e) {
+    userSkills = [];
+  }
+
+  let reqSkills = [];
+  try {
+    reqSkills = typeof team?.required_skills === 'string' ? JSON.parse(team.required_skills || '[]') : (team?.required_skills || []);
+  } catch (e) {
+    reqSkills = [];
+  }
+
+  let techStack = [];
+  try {
+    techStack = typeof team?.tech_stack === 'string' ? JSON.parse(team.tech_stack || '[]') : (team?.tech_stack || []);
+  } catch (e) {
+    techStack = [];
+  }
+
+  const prompt = `
+Task: Evaluate the compatibility between a hackathon participant and a team.
+
+Participant Profile:
+- Skills: ${JSON.stringify(userSkills)}
+- Experience Level: ${userProfile?.experience_level || 'Intermediate'}
+- Interests: ${userProfile?.interests || '[]'}
+- Project Goal: "${userProfile?.project_goal_text || 'Build cool project'}"
+
+Team Requirements:
+- Team Name: "${team?.name || 'Hackathon Team'}"
+- Category: "${team?.category || 'General'}"
+- Description: "${team?.description || ''}"
+- Required Skills: ${JSON.stringify(reqSkills)}
+- Tech Stack: ${JSON.stringify(techStack)}
+
+Evaluate compatibility and return a STRICT JSON object in this format:
+{
+  "compatibility_percent": 85,
+  "matching_skills": ["React", "Node.js"],
+  "missing_skills": ["Python"],
+  "ai_explanation": "Short clear rationale explanation (max 2-3 sentences)."
+}
+`;
+
+  try {
+    const rawOutput = await callLLM(prompt, "You are an expert AI hackathon matchmaker.");
+    const parsed = safeParseJSON(rawOutput);
+
+    if (parsed && typeof parsed.compatibility_percent === 'number') {
+      return {
+        compatibility_percent: Math.min(100, Math.max(0, Math.round(parsed.compatibility_percent))),
+        matching_skills: Array.isArray(parsed.matching_skills) ? parsed.matching_skills : [],
+        missing_skills: Array.isArray(parsed.missing_skills) ? parsed.missing_skills : [],
+        ai_explanation: parsed.ai_explanation || "Good overall skill alignment for this team's goals.",
+      };
+    }
+  } catch (err) {
+    console.warn('[AIService] calculateTeamCompatibilityWithAI failed, using heuristic:', err.message);
+  }
+
+  // Heuristic fallback
+  const userSkillLower = userSkills.map(s => s.toLowerCase());
+  const allReqLower = [...reqSkills, ...techStack].map(s => s.toLowerCase());
+
+  const matching = [];
+  const missing = [];
+
+  reqSkills.forEach(s => {
+    if (userSkillLower.includes(s.toLowerCase())) {
+      matching.push(s);
+    } else {
+      missing.push(s);
+    }
+  });
+
+  const matchRatio = allReqLower.length > 0 ? (matching.length / Math.max(1, reqSkills.length)) : 0.75;
+  const score = Math.min(95, Math.max(50, Math.round(matchRatio * 40 + 55)));
+
+  return {
+    compatibility_percent: score,
+    matching_skills: matching,
+    missing_skills: missing,
+    ai_explanation: `Heuristic compatibility match: User shares ${matching.length} matching skills with the team's requirements.`,
+  };
+}
+
 module.exports = {
   safeParseJSON,
   matchTeamsWithAI,
   generateMentorResponse,
   evaluateSubmissionWithAI,
   validateIdeaWithAI,
+  calculateTeamCompatibilityWithAI,
 };
