@@ -1,4 +1,4 @@
-# HackOps AI
+# HackHub AI
 
 An AI-powered hackathon management platform that reimagines the hackathon experience for organizers, mentors, judges, and participants — AI team formation, an AI mentor assistant, AI project evaluation, idea validation, plagiarism detection, and live engagement tracking, all in one place.
 
