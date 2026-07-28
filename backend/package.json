@@ -8,6 +8,7 @@
     "dev": "node --watch src/server.js",
     "prisma:generate": "npx prisma generate",
     "prisma:push": "npx prisma db push",
+    "postinstall": "prisma generate",
     "seed": "node src/scripts/seed.js",
     "test": "node src/scripts/test_all_features.js"
   },
