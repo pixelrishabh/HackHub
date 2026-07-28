@@ -1,5 +1,8 @@
 # HackHub AI
 
+🔗 **Live Demo:** [hack-hub-sepia.vercel.app](https://hack-hub-sepia.vercel.app/)
+Frontend deployed on **Vercel**, backend API deployed on **Render**.
+
 An AI-powered hackathon management platform that reimagines the hackathon experience for organizers, mentors, judges, and participants — AI team formation, an AI mentor assistant, AI project evaluation, idea validation, plagiarism detection, and live engagement tracking, all in one place.
 
 ## Features
@@ -187,6 +190,40 @@ Route groups:
 - All team/submission/mentor-history routes verify the requester is either a team member or has an appropriate staff role before returning data
 - Rate limiting is applied to `/login` and `/register`
 - CORS is restricted to an explicit origin allow-list (`ALLOWED_ORIGIN` in `.env`), not `*`
+
+## Deployment
+
+This project is deployed with a split architecture: **frontend on Vercel**, **backend on Render**.
+
+**Live app:** https://hack-hub-sepia.vercel.app/
+
+### Frontend (Vercel)
+- Root directory: `frontend/`
+- Build command: `npm run build`
+- Output directory: `dist`
+- Environment variable required in Vercel project settings:
+  ```
+  VITE_API_URL=<your-render-backend-url>/api
+  ```
+
+### Backend (Render)
+- Root directory: `backend/`
+- Build command: `npm install && npx prisma generate && npx prisma db push`
+- Start command: `npm start`
+- Environment variables required in Render project settings (same keys as `.env.example`):
+  ```
+  PORT=5000
+  NODE_ENV=production
+  JWT_SECRET=<a long random string>
+  DATABASE_URL=<your production database URL>
+  GEMINI_API_KEY=<your Gemini API key>
+  ANTHROPIC_API_KEY=<your Anthropic API key, if used>
+  ALLOWED_ORIGIN=https://hack-hub-sepia.vercel.app
+  ```
+
+> ⚠️ Render's free tier uses ephemeral disk storage — if `DATABASE_URL` still points to a local SQLite file (`file:./dev.db`), **all data will be wiped on every redeploy or restart**. For a persistent production database, switch to a hosted Postgres database (e.g. Supabase, Neon, or Render's own managed Postgres) — see the section below.
+
+> Make sure `ALLOWED_ORIGIN` on Render exactly matches your Vercel domain (including `https://`), or the frontend will get CORS errors when calling the API.
 
 ## Switching to PostgreSQL / Supabase
 
