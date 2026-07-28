@@ -4,6 +4,10 @@ node_modules/
 # Environment variables
 .env
 
+# Build outputs
+dist/
+frontend/dist/
+
 # SQLite database
 *.db
 *.db-journal

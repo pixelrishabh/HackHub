@@ -214,112 +214,123 @@ async function getMe(req, res) {
 async function checkInUser(req, res) {
   try {
     const userId = req.user.id;
-    let user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { profile: true },
-    });
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    if (!user.profile) {
-      const newProfile = await prisma.profile.create({
-        data: { user_id: userId },
+    const result = await prisma.$transaction(async (tx) => {
+      let user = await tx.user.findUnique({
+        where: { id: userId },
+        include: { profile: true },
       });
-      user.profile = newProfile;
-    }
 
-    const now = new Date();
-    const lastCheckIn = user.profile.last_check_in_at ? new Date(user.profile.last_check_in_at) : null;
-
-    // Check if already checked in today (UTC date)
-    const isSameDay = !!(lastCheckIn &&
-      lastCheckIn.getUTCFullYear() === now.getUTCFullYear() &&
-      lastCheckIn.getUTCMonth() === now.getUTCMonth() &&
-      lastCheckIn.getUTCDate() === now.getUTCDate()
-    );
-
-    let badgesList = [];
-    try {
-      badgesList = JSON.parse(user.profile.badges || '[]');
-    } catch (e) {
-      badgesList = [];
-    }
-
-    if (isSameDay) {
-      const { password_hash: _, ...safeUser } = user;
-      return res.status(200).json({
-        already_checked_in: true,
-        message: 'You have already checked in today!',
-        user: {
-          ...safeUser,
-          is_checked_in_today: true,
-        },
-      });
-    }
-
-    // Calculate Streak
-    let newStreak = 1;
-    if (lastCheckIn) {
-      const diffMs = now.getTime() - lastCheckIn.getTime();
-      const diffHours = diffMs / (1000 * 60 * 60);
-      if (diffHours <= 48) {
-        newStreak = (user.profile.check_in_streak || 0) + 1;
+      if (!user) {
+        return { status: 404, payload: { error: 'User not found.' } };
       }
-    }
 
-    const newCount = (user.profile.check_in_count || 0) + 1;
+      if (!user.profile) {
+        const newProfile = await tx.profile.create({
+          data: { user_id: userId },
+        });
+        user.profile = newProfile;
+      }
 
-    // Award Badges
-    if (newCount >= 1 && !badgesList.includes('First Step')) badgesList.push('First Step');
-    if (newStreak >= 3 && !badgesList.includes('Streak Master')) badgesList.push('Streak Master');
-    if (newCount >= 5 && !badgesList.includes('Hackathon Veteran')) badgesList.push('Hackathon Veteran');
-    if (newStreak >= 7 && !badgesList.includes('Legendary')) badgesList.push('Legendary');
+      const now = new Date();
+      const lastCheckIn = user.profile.last_check_in_at ? new Date(user.profile.last_check_in_at) : null;
 
-    const updatedProfile = await prisma.profile.update({
-      where: { user_id: userId },
-      data: {
-        last_check_in_at: now,
-        check_in_count: newCount,
-        check_in_streak: newStreak,
-        badges: JSON.stringify(badgesList),
-      },
-    });
+      // Check if already checked in today (UTC date)
+      const isSameDay = !!(lastCheckIn &&
+        lastCheckIn.getUTCFullYear() === now.getUTCFullYear() &&
+        lastCheckIn.getUTCMonth() === now.getUTCMonth() &&
+        lastCheckIn.getUTCDate() === now.getUTCDate()
+      );
 
-    // Also log engagement event for participant's team if assigned to one
-    const teams = await prisma.team.findMany();
-    const userTeam = teams.find(t => {
+      let badgesList = [];
       try {
-        const members = JSON.parse(t.member_ids || '[]');
-        return Array.isArray(members) && members.includes(userId);
+        badgesList = JSON.parse(user.profile.badges || '[]');
       } catch (e) {
-        return false;
+        badgesList = [];
       }
-    });
 
-    if (userTeam) {
-      await prisma.engagementEvent.create({
+      if (isSameDay) {
+        const { password_hash: _, ...safeUser } = user;
+        return {
+          status: 200,
+          payload: {
+            already_checked_in: true,
+            message: 'You have already checked in today!',
+            user: {
+              ...safeUser,
+              is_checked_in_today: true,
+            },
+          },
+        };
+      }
+
+      // Calculate Streak
+      let newStreak = 1;
+      if (lastCheckIn) {
+        const diffMs = now.getTime() - lastCheckIn.getTime();
+        const diffHours = diffMs / (1000 * 60 * 60);
+        if (diffHours <= 48) {
+          newStreak = (user.profile.check_in_streak || 0) + 1;
+        }
+      }
+
+      const newCount = (user.profile.check_in_count || 0) + 1;
+
+      // Award Badges
+      if (newCount >= 1 && !badgesList.includes('First Step')) badgesList.push('First Step');
+      if (newStreak >= 3 && !badgesList.includes('Streak Master')) badgesList.push('Streak Master');
+      if (newCount >= 5 && !badgesList.includes('Hackathon Veteran')) badgesList.push('Hackathon Veteran');
+      if (newStreak >= 7 && !badgesList.includes('Legendary')) badgesList.push('Legendary');
+
+      const updatedProfile = await tx.profile.update({
+        where: { user_id: userId },
         data: {
-          team_id: userTeam.id,
-          user_id: userId,
-          event_type: 'check_in',
+          last_check_in_at: now,
+          check_in_count: newCount,
+          check_in_streak: newStreak,
+          badges: JSON.stringify(badgesList),
         },
-      }).catch(e => console.warn('[CheckIn] Engagement logging warn:', e.message));
-    }
+      });
 
-    const updatedUser = {
-      ...user,
-      profile: updatedProfile,
-      is_checked_in_today: true,
-    };
-    delete updatedUser.password_hash;
+      // Also log engagement event for participant's team if assigned to one
+      const teams = await tx.team.findMany();
+      const userTeam = teams.find(t => {
+        try {
+          const members = JSON.parse(t.member_ids || '[]');
+          return Array.isArray(members) && members.includes(userId);
+        } catch (e) {
+          return false;
+        }
+      });
 
-    return res.status(200).json({
-      already_checked_in: false,
-      message: `Daily check-in successful! (+1 streak, total: ${newCount})`,
-      user: updatedUser,
+      if (userTeam) {
+        await tx.engagementEvent.create({
+          data: {
+            team_id: userTeam.id,
+            user_id: userId,
+            event_type: 'check_in',
+          },
+        }).catch(e => console.warn('[CheckIn] Engagement logging warn:', e.message));
+      }
+
+      const updatedUser = {
+        ...user,
+        profile: updatedProfile,
+        is_checked_in_today: true,
+      };
+      delete updatedUser.password_hash;
+
+      return {
+        status: 200,
+        payload: {
+          already_checked_in: false,
+          message: `Daily check-in successful! (+1 streak, total: ${newCount})`,
+          user: updatedUser,
+        },
+      };
     });
+
+    return res.status(result.status).json(result.payload);
   } catch (error) {
     console.error('[AuthController] checkInUser Error:', error);
     return res.status(500).json({ error: 'Failed to process daily check-in.' });
