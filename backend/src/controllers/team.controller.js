@@ -66,9 +66,23 @@ async function matchTeams(req, res) {
     // Create Team records in DB
     if (aiResult && Array.isArray(aiResult.teams)) {
       for (const t of aiResult.teams) {
-        const teamName = t.name || `HackHub Team ${Math.floor(100 + Math.random() * 900)}`;
-        const memberIds = Array.isArray(t.member_ids) ? t.member_ids : [];
-        const rationale = t.rationale || t.match_rationale_text || 'AI-formed balanced team.';
+        const teamName =
+  t.name || `HackHub Team ${Math.floor(100 + Math.random() * 900)}`;
+
+const memberIds = Array.isArray(t.member_ids)
+  ? t.member_ids
+  : [];
+
+const rationale =
+  t.rationale ||
+  t.match_rationale_text ||
+  "AI-formed balanced team.";
+
+const compatibilityScore =
+  t.compatibility_score || null;
+
+const scoreBreakdown =
+  t.score_breakdown || null;
 
         if (memberIds.length > 0) {
           const newTeam = await prisma.team.create({
@@ -78,10 +92,34 @@ async function matchTeams(req, res) {
               match_rationale_text: rationale,
             },
           });
-          createdTeams.push({
-            ...newTeam,
-            member_ids: memberIds,
-          });
+          const members = await prisma.user.findMany({
+  where: {
+    id: {
+      in: memberIds,
+    },
+  },
+  select: {
+    id: true,
+    name: true,
+    email: true,
+    role: true,
+    profile: true,
+  },
+});
+
+createdTeams.push({
+  ...newTeam,
+
+  member_ids: memberIds,
+
+  members,
+
+  compatibility_score: compatibilityScore,
+
+  score_breakdown: scoreBreakdown,
+
+  rationale,
+});
         }
       }
     }
@@ -119,35 +157,45 @@ async function getAllTeams(req, res) {
         select: { id: true, name: true, email: true, role: true, profile: true },
       });
 
-      return {
-        ...t,
-        member_ids: memberIds,
-        members,
-      };
+      const skillSummary = members.flatMap((member) => {
+  try {
+    return JSON.parse(member.profile?.skills || "[]");
+  } catch {
+    return [];
+  }
+});
+
+const interestSummary = members.flatMap((member) => {
+  try {
+    return JSON.parse(member.profile?.interests || "[]");
+  } catch {
+    return [];
+  }
+});
+
+return {
+  ...t,
+
+  member_ids: memberIds,
+
+  members,
+
+  total_members: members.length,
+
+  unique_skills: [...new Set(skillSummary)],
+
+  interests: [...new Set(interestSummary)],
+};
     }));
 
     // Data Scoping: Participants see only their own team, staff sees all
     const userRole = (req.user?.role || '').toLowerCase();
     const isStaff = ['organizer', 'judge', 'mentor', 'sponsor'].includes(userRole);
+
     if (!isStaff && req.user) {
-      let userTeams = populatedTeams.filter(t => Array.isArray(t.member_ids) && t.member_ids.includes(req.user.id));
-      if (userTeams.length === 0) {
-        const newTeam = await prisma.team.create({
-          data: {
-            name: `${req.user.name}'s Team`,
-            member_ids: JSON.stringify([req.user.id]),
-            match_rationale_text: 'Participant workspace team.',
-          },
-        });
-        userTeams = [{
-          ...newTeam,
-          member_ids: [req.user.id],
-          members: [{ id: req.user.id, name: req.user.name, email: req.user.email, role: req.user.role }],
-          submissions: [],
-          engagementEvents: [],
-        }];
-      }
-      populatedTeams = userTeams;
+      populatedTeams = populatedTeams.filter(
+        t => Array.isArray(t.member_ids) && t.member_ids.includes(req.user.id)
+      );
     }
 
     return res.status(200).json({ teams: populatedTeams });
@@ -191,12 +239,36 @@ async function getTeamById(req, res) {
       select: { id: true, name: true, email: true, role: true, profile: true },
     });
 
+    const skillSummary = members.flatMap((member) => {
+  try {
+    return JSON.parse(member.profile?.skills || "[]");
+  } catch {
+    return [];
+  }
+});
+
+const interestSummary = members.flatMap((member) => {
+  try {
+    return JSON.parse(member.profile?.interests || "[]");
+  } catch {
+    return [];
+  }
+});
+
     return res.status(200).json({
       team: {
-        ...team,
-        member_ids: memberIds,
-        members,
-      },
+  ...team,
+
+  member_ids: memberIds,
+
+  members,
+
+  total_members: members.length,
+
+  skills: [...new Set(skillSummary)],
+
+  interests: [...new Set(interestSummary)],
+},
     });
   } catch (error) {
     console.error('[TeamController] getTeamById Error:', error);
