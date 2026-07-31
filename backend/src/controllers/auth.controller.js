@@ -16,7 +16,9 @@ async function register(req, res) {
       return res.status(400).json({ error: 'Name, email, and password are required.' });
     }
 
-    if (!EMAIL_REGEX.test(email)) {
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
       return res.status(400).json({ error: 'Invalid email format.' });
     }
 
@@ -24,7 +26,7 @@ async function register(req, res) {
       return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) {
       return res.status(409).json({ error: 'Email is already registered.' });
     }
@@ -36,7 +38,7 @@ async function register(req, res) {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: normalizedEmail,
         password_hash,
         role: assignedRole,
         profile: {
@@ -79,7 +81,9 @@ async function createStaff(req, res) {
       return res.status(400).json({ error: 'Name, email, password, and role are required for staff creation.' });
     }
 
-    if (!EMAIL_REGEX.test(email)) {
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
       return res.status(400).json({ error: 'Invalid email format.' });
     }
 
@@ -93,7 +97,7 @@ async function createStaff(req, res) {
       return res.status(400).json({ error: `Invalid staff role. Allowed roles: ${allowedStaffRoles.join(', ')}` });
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (existingUser) {
       return res.status(409).json({ error: 'Email is already registered.' });
     }
@@ -103,7 +107,7 @@ async function createStaff(req, res) {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: normalizedEmail,
         password_hash,
         role: targetRole,
         profile: {
@@ -142,8 +146,10 @@ async function login(req, res) {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
+    const normalizedEmail = String(email).trim().toLowerCase();
+
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
       include: { profile: true },
     });
 
