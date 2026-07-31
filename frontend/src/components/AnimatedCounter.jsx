@@ -5,16 +5,20 @@ export function AnimatedCounter({ value, suffix = '', prefix = '', duration = 20
   const [hasAnimated, setHasAnimated] = useState(false);
   const ref = useRef(null);
 
-  // Extract number from string value (e.g. "100" -> 100)
-  const numericValue = parseInt(value.replace(/[^0-9]/g, ''), 10);
+  // Safely convert value to string to prevent .replace errors on numbers or nulls
+  const strVal = value !== null && value !== undefined ? String(value) : '0';
+  const numericValue = parseFloat(strVal.replace(/[^0-9.]/g, '')) || 0;
   const isNumeric = !isNaN(numericValue);
 
   useEffect(() => {
-    if (!isNumeric) return;
+    if (!isNumeric || numericValue === 0) {
+      setCount(numericValue);
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !hasAnimated) {
+        if (entries[0]?.isIntersecting && !hasAnimated) {
           setHasAnimated(true);
           let startTime = null;
 
@@ -27,13 +31,15 @@ export function AnimatedCounter({ value, suffix = '', prefix = '', duration = 20
 
             if (progress < 1) {
               requestAnimationFrame(animate);
+            } else {
+              setCount(numericValue);
             }
           };
 
           requestAnimationFrame(animate);
         }
       },
-      { threshold: 0.2 }
+      { threshold: 0.1 }
     );
 
     if (ref.current) observer.observe(ref.current);
@@ -42,7 +48,7 @@ export function AnimatedCounter({ value, suffix = '', prefix = '', duration = 20
   }, [numericValue, isNumeric, duration, hasAnimated]);
 
   if (!isNumeric) {
-    return <span>{value}</span>;
+    return <span>{strVal}</span>;
   }
 
   return (
