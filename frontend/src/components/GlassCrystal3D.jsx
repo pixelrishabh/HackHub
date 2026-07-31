@@ -124,11 +124,11 @@ function AICoreMesh() {
 
       {/* 1. Main High-Density Silky-Smooth Glass AI Knot Core */}
       <mesh ref={meshRef} castShadow receiveShadow>
-        <torusKnotGeometry args={[1.2, 0.36, 256, 64]} />
+        <torusKnotGeometry args={[1.2, 0.36, 128, 32]} />
         <MeshTransmissionMaterial
           backside
-          samples={16}
-          resolution={512}
+          samples={6}
+          resolution={256}
           transmission={0.95}
           roughness={0.06}
           clearcoat={1}
@@ -148,7 +148,7 @@ function AICoreMesh() {
 
       {/* 2. Inner Glowing Core Orb */}
       <mesh ref={innerSphereRef}>
-        <sphereGeometry args={[0.65, 64, 64]} />
+        <sphereGeometry args={[0.65, 32, 32]} />
         <meshStandardMaterial
           color="#d9f6ff"
           emissive="#aeebff"
@@ -161,7 +161,7 @@ function AICoreMesh() {
 
       {/* 3. Orbiting Energy Rings */}
       <mesh ref={ring1Ref}>
-        <torusGeometry args={[2.5, 0.015, 32, 128]} />
+        <torusGeometry args={[2.5, 0.015, 16, 64]} />
         <meshStandardMaterial
           color="#ffffff"
           emissive="#ffffff"
@@ -172,7 +172,7 @@ function AICoreMesh() {
       </mesh>
 
       <mesh ref={ring2Ref}>
-        <torusGeometry args={[2.9, 0.012, 32, 128]} />
+        <torusGeometry args={[2.9, 0.012, 16, 64]} />
         <meshStandardMaterial
           color="#aeebff"
           emissive="#aeebff"
@@ -183,7 +183,7 @@ function AICoreMesh() {
       </mesh>
 
       {/* 4. Ambient Sparkles Particle Field */}
-      <Sparkles count={55} scale={6.5} size={2.5} speed={0.4} opacity={0.65} color="#d9f6ff" />
+      <Sparkles count={30} scale={6.5} size={2.5} speed={0.4} opacity={0.65} color="#d9f6ff" />
     </group>
   );
 }
@@ -199,6 +199,7 @@ export function GlassCrystal3D() {
       {/* R3F Canvas */}
       <Canvas
         camera={{ position: [0, 0, 6.2], fov: 45 }}
+        dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         className="w-full h-full cursor-grab active:cursor-grabbing"
       >

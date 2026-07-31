@@ -132,6 +132,7 @@ export function Page3DCanvas({ type = 'orb', className = '' }) {
       <div className="absolute w-64 h-64 bg-radial from-white/15 via-cyan-100/10 to-transparent rounded-full blur-3xl" />
       <Canvas
         camera={{ position: [0, 0, 5], fov: 45 }}
+        dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         className="w-full h-full"
       >
