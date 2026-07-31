@@ -33,8 +33,6 @@ export function DashboardPage() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [checkInLoading, setCheckInLoading] = useState(false);
-  const [checkInMessage, setCheckInMessage] = useState('');
   const [engagementScore, setEngagementScore] = useState(null);
 
   useEffect(() => {
@@ -63,21 +61,6 @@ export function DashboardPage() {
 
     loadDashboardData();
   }, []);
-
-  const handleCheckIn = async (teamId) => {
-    setCheckInLoading(true);
-    setCheckInMessage('');
-    try {
-      const res = await checkInTeam(teamId);
-      setCheckInMessage(res.message || 'Check-in successful! (+5 pts)');
-      const updatedEng = await getTeamEngagement(teamId);
-      setEngagementScore(updatedEng.total_engagement_score || 0);
-    } catch (err) {
-      setCheckInMessage(err.message || 'Check-in failed.');
-    } finally {
-      setCheckInLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -126,23 +109,9 @@ export function DashboardPage() {
                 <div className="text-xs font-semibold text-slate-400">Team Engagement</div>
                 <div className="text-2xl font-black text-accentCyan">{engagementScore ?? 0} pts</div>
               </div>
-              <button
-                onClick={() => handleCheckIn(teams[0].id)}
-                disabled={checkInLoading}
-                className="px-4 py-2.5 bg-white text-black hover:bg-slate-100 font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center space-x-1.5 disabled:opacity-50"
-              >
-                <Zap className="w-4 h-4 text-black" />
-                <span>{checkInLoading ? 'Checking in...' : 'Check-In (+5 pts)'}</span>
-              </button>
             </div>
           )}
         </div>
-
-        {checkInMessage && (
-          <div className="mt-4 p-3 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold rounded-xl">
-            {checkInMessage}
-          </div>
-        )}
       </div>
 
       {error && (

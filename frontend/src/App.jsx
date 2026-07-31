@@ -6,6 +6,7 @@ import { RoleGuard } from './components/RoleGuard';
 import { Navbar } from './components/Navbar';
 import { CustomSpotlight } from './components/CustomSpotlight';
 import { HeroBackground } from './components/HeroBackground';
+import { FloatingChatWidget } from './components/FloatingChatWidget';
 
 import { LandingPage } from './pages/LandingPage';
 import { LoginPage } from './pages/LoginPage';
@@ -18,6 +19,9 @@ import { ProjectEvalPage } from './pages/ProjectEvalPage';
 import { IdeaValidatorPage } from './pages/IdeaValidatorPage';
 import { PlagiarismPage } from './pages/PlagiarismPage';
 import { EngagementPage } from './pages/EngagementPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
+import { ChatPage } from './pages/ChatPage';
+import { SponsorDashboardPage } from './pages/SponsorDashboardPage';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -58,9 +62,18 @@ function AnimatedRoutes() {
           />
 
           <Route
+            path="/dashboard/chat"
+            element={
+              <RoleGuard allowedRoles={['participant', 'organizer', 'judge', 'mentor', 'sponsor']}>
+                <ChatPage />
+              </RoleGuard>
+            }
+          />
+
+          <Route
             path="/dashboard/team-matching"
             element={
-              <RoleGuard allowedRoles={['organizer', 'judge']}>
+              <RoleGuard allowedRoles={['participant', 'organizer', 'judge', 'mentor', 'sponsor']}>
                 <TeamMatchingPage />
               </RoleGuard>
             }
@@ -111,6 +124,24 @@ function AnimatedRoutes() {
             }
           />
 
+          <Route
+            path="/dashboard/analytics"
+            element={
+              <RoleGuard allowedRoles={['participant', 'organizer', 'judge', 'mentor', 'sponsor']}>
+                <AnalyticsPage />
+              </RoleGuard>
+            }
+          />
+
+          <Route
+            path="/dashboard/sponsor"
+            element={
+              <RoleGuard allowedRoles={['sponsor', 'organizer', 'judge', 'mentor']}>
+                <SponsorDashboardPage />
+              </RoleGuard>
+            }
+          />
+
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -131,9 +162,9 @@ export default function App() {
               <AnimatedRoutes />
             </main>
           </CustomSpotlight>
+          <FloatingChatWidget />
         </div>
       </BrowserRouter>
     </AuthProvider>
   );
 }
-

@@ -16,7 +16,10 @@ import {
   X,
   User,
   Shield,
-  UserPlus
+  UserPlus,
+  MessageSquare,
+  Award,
+  Briefcase
 } from 'lucide-react';
 import { Modal } from './Modal';
 
@@ -62,12 +65,13 @@ export function Navbar() {
     ? [
         { path: '/dashboard', label: 'Overview', icon: Sparkles },
         { path: '/dashboard/profile', label: 'AI Profile', icon: User },
-        ...(isStaff ? [{ path: '/dashboard/team-matching', label: 'AI Team Matcher', icon: Users }] : []),
+        { path: '/dashboard/chat', label: 'Team Chat', icon: MessageSquare },
         { path: '/dashboard/mentor', label: 'AI Mentor', icon: Bot },
         { path: '/dashboard/evaluation', label: isStaff ? 'Evaluations' : 'My Submission', icon: CheckSquare },
         { path: '/dashboard/idea-validator', label: 'Idea Validator', icon: FileCode },
-        ...(isStaff ? [{ path: '/dashboard/plagiarism', label: 'Plagiarism Radar', icon: ShieldCheck }] : []),
         { path: '/dashboard/engagement', label: 'Live Leaderboard', icon: BarChart2 },
+        { path: '/dashboard/analytics', label: 'Analytics & Certs', icon: Award },
+        ...(role === 'sponsor' || isStaff ? [{ path: '/dashboard/sponsor', label: 'Sponsors', icon: Briefcase }] : []),
       ]
     : [];
 

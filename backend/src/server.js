@@ -10,6 +10,9 @@ const submissionRoutes = require('./routes/submission.routes');
 const ideaRoutes = require('./routes/idea.routes');
 const engagementRoutes = require('./routes/engagement.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const analyticsRoutes = require('./routes/analytics.routes');
+const chatRoutes = require('./routes/chat.routes');
+const sponsorRoutes = require('./routes/sponsor.routes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -59,6 +62,9 @@ app.use('/api/submissions', submissionRoutes);
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/engagement', engagementRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/sponsor', sponsorRoutes);
 
 // Global Error Handler (stateless API server, no error details leaked)
 app.use((err, req, res, next) => {
