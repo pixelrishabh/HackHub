@@ -10,6 +10,7 @@ async function getSponsorProjects(req, res) {
 
     // Fetch all submissions with team details & evaluations
     const submissions = await prisma.submission.findMany({
+      take: 100,
       include: {
         team: true,
         evaluations: { orderBy: { createdAt: 'desc' } },
@@ -21,6 +22,7 @@ async function getSponsorProjects(req, res) {
     if (prisma.sponsorBookmark) {
       const bookmarks = await prisma.sponsorBookmark.findMany({
         where: { sponsor_id: sponsorId, target_type: 'PROJECT' },
+        take: 100,
       });
       bookmarkedSubIds = new Set(bookmarks.map(b => b.target_id));
     }
@@ -76,12 +78,13 @@ async function getSponsorTalent(req, res) {
     // Fetch all participant users with profile details
     const participants = await prisma.user.findMany({
       where: { role: 'participant' },
+      take: 100,
       include: { profile: true },
       orderBy: { createdAt: 'desc' },
     });
 
     // Fetch all teams to map team affiliations
-    const teams = await prisma.team.findMany();
+    const teams = await prisma.team.findMany({ take: 100 });
     const userTeamMap = {};
     teams.forEach(t => {
       try {

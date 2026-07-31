@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { AVAILABLE_FIELDS } from '../config/fieldConfig';
@@ -31,6 +31,22 @@ export function Navbar() {
   const [fieldMenuOpen, setFieldMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [staffModalOpen, setStaffModalOpen] = useState(false);
+
+  const fieldMenuRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (fieldMenuRef.current && !fieldMenuRef.current.contains(event.target)) {
+        setFieldMenuOpen(false);
+      }
+    }
+    if (fieldMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [fieldMenuOpen]);
 
   // Staff creation form state
   const [staffForm, setStaffForm] = useState({
@@ -125,7 +141,7 @@ export function Navbar() {
               <>
                 {/* Participant Field Switcher Dropdown */}
                 {!isStaff && (
-                  <div className="relative">
+                  <div className="relative" ref={fieldMenuRef}>
                     <button
                       onClick={() => setFieldMenuOpen(!fieldMenuOpen)}
                       className="flex items-center space-x-2 px-3 py-1.5 bg-white/5 text-slate-200 text-xs font-semibold rounded-full border border-white/15 hover:bg-white/10 hover:border-white/30 transition-all"

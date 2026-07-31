@@ -15,6 +15,7 @@ import { SocialLinksSection } from '../components/profile/SocialLinksSection';
 import { EditProfileModal } from '../components/profile/EditProfileModal';
 import { ShareProfileModal } from '../components/profile/ShareProfileModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { AlertCircle } from 'lucide-react';
 
 export function ProfilePage() {
   const { user: currentUser, updateUser } = useAuth();
@@ -103,6 +104,13 @@ export function ProfilePage() {
       <div className="fixed inset-0 bg-[linear-gradient(to_right,#ffffff03_1px,transparent_1px),linear-gradient(to_bottom,#ffffff03_1px,transparent_1px)] bg-[size:48px_48px] opacity-40 pointer-events-none" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
+        {error && (
+          <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-sm flex items-center space-x-3 backdrop-blur-xl">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* 1. Header Hero Card */}
         <ProfileHeader
           user={targetUser}

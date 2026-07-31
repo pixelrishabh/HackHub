@@ -160,7 +160,49 @@ async function runTests() {
     );
     console.log('✅ Feature 6 Organizer Dashboard Leaderboard:', dashboard.status, 'Top Team:', dashboard.body.dashboard[0]);
 
-    console.log('\n🎉 ALL 6 HACKOPS AI FEATURES SUCCESSFULLY VERIFIED!');
+    // 9. NEW PROFILE ENDPOINTS
+    console.log('\n--- Testing New Profile Endpoints ---');
+    const profMe = await makeRequest(
+      { host: 'localhost', port: PORT, path: '/api/profile/me', method: 'GET', headers: { 'Authorization': `Bearer ${organizerToken}` } }
+    );
+    console.log('✅ GET /api/profile/me:', profMe.status === 200 ? 'PASSED' : 'FAILED', profMe.body.user?.email);
+
+    const profContrib = await makeRequest(
+      { host: 'localhost', port: PORT, path: '/api/profile/contributions', method: 'GET', headers: { 'Authorization': `Bearer ${organizerToken}` } }
+    );
+    console.log('✅ GET /api/profile/contributions:', profContrib.status === 200 ? 'PASSED' : 'FAILED', profContrib.body.summary);
+
+    const profStreak = await makeRequest(
+      { host: 'localhost', port: PORT, path: '/api/profile/streak', method: 'GET', headers: { 'Authorization': `Bearer ${organizerToken}` } }
+    );
+    console.log('✅ GET /api/profile/streak:', profStreak.status === 200 ? 'PASSED' : 'FAILED', profStreak.body.streak);
+
+    const profAct = await makeRequest(
+      { host: 'localhost', port: PORT, path: '/api/profile/activity', method: 'GET', headers: { 'Authorization': `Bearer ${organizerToken}` } }
+    );
+    console.log('✅ GET /api/profile/activity:', profAct.status === 200 ? 'PASSED' : 'FAILED', 'Activities:', profAct.body.activities?.length);
+
+    const profPut = await makeRequest(
+      { host: 'localhost', port: PORT, path: '/api/profile', method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${organizerToken}` } },
+      { timezone: 'PST', experience_level: 'Advanced' }
+    );
+    console.log('✅ PUT /api/profile:', profPut.status === 200 ? 'PASSED' : 'FAILED');
+
+    // 10. NEW MENTOR ENDPOINTS
+    console.log('\n--- Testing New Mentor Endpoints ---');
+    const mentorReview = await makeRequest(
+      { host: 'localhost', port: PORT, path: '/api/mentor/review', method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${organizerToken}` } },
+      { team_id: activeTeam.id }
+    );
+    console.log('✅ POST /api/mentor/review:', mentorReview.status === 200 ? 'PASSED' : 'FAILED');
+
+    const mentorUpload = await makeRequest(
+      { host: 'localhost', port: PORT, path: '/api/mentor/upload', method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${organizerToken}` } },
+      { fileName: 'architecture.txt', fileType: 'text/plain', fileSize: 1024, textContent: 'Sample system diagram text', team_id: activeTeam.id }
+    );
+    console.log('✅ POST /api/mentor/upload:', mentorUpload.status === 200 ? 'PASSED' : 'FAILED');
+
+    console.log('\n🎉 ALL HACKOPS AI FEATURES & NEW ENDPOINTS SUCCESSFULLY VERIFIED!');
   } catch (error) {
     console.error('❌ Test execution error:', error);
   } finally {

@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 
 const authRoutes = require('./routes/auth.routes');
+const profileRoutes = require('./routes/profile.routes');
 const teamRoutes = require('./routes/team.routes');
 const mentorRoutes = require('./routes/mentor.routes');
 const submissionRoutes = require('./routes/submission.routes');
@@ -34,8 +35,7 @@ app.use(cors({
     ) {
       return callback(null, true);
     }
-    // Permissive fallback so production CORS preflights never crash
-    return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -56,6 +56,7 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/profile', profileRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/mentor', mentorRoutes);
 app.use('/api/submissions', submissionRoutes);

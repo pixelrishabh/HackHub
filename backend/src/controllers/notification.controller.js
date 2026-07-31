@@ -14,6 +14,9 @@ const markRead = async (req, res) => {
   try {
     const userId = req.user.id;
     const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+      return res.status(400).json({ error: 'Notification ID is required.' });
+    }
     await notificationService.markAsRead(id, userId);
     res.json({ message: 'Notification marked as read' });
   } catch (error) {

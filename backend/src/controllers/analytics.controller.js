@@ -17,7 +17,7 @@ async function getAnalyticsDashboard(req, res) {
 
     const submissionRate = totalTeams > 0 ? Number(((totalSubmissions / totalTeams) * 100).toFixed(1)) : 0;
 
-    const evaluations = await prisma.evaluation.findMany();
+    const evaluations = await prisma.evaluation.findMany({ take: 100 });
     const evaluatedCount = evaluations.length;
 
     let overallAiAverage = 0;
@@ -66,7 +66,7 @@ async function getAnalyticsDashboard(req, res) {
     }
 
     // Track Distribution
-    const teams = await prisma.team.findMany();
+    const teams = await prisma.team.findMany({ take: 100 });
     const trackCounts = {};
     teams.forEach(t => {
       const track = t.primary_field || 'General';
@@ -107,6 +107,7 @@ async function generateCertificates(req, res) {
   try {
     const participants = await prisma.user.findMany({
       where: { role: 'participant' },
+      take: 100,
       include: { profile: true },
     });
 
@@ -177,6 +178,7 @@ async function getUserCertificates(req, res) {
 
     const certificates = await prisma.certificate.findMany({
       where: { user_id: userId },
+      take: 100,
       include: {
         user: { select: { id: true, name: true, email: true, role: true } },
       },
@@ -197,6 +199,10 @@ async function getUserCertificates(req, res) {
 async function verifyCertificate(req, res) {
   try {
     const { hash } = req.params;
+
+    if (!hash || typeof hash !== 'string' || !hash.trim()) {
+      return res.status(400).json({ error: 'Certificate verification hash parameter is required.' });
+    }
 
     if (!prisma.certificate) {
       return res.status(404).json({ authentic: false, message: 'Certificate system offline.' });

@@ -28,6 +28,9 @@ function isUserAuthorizedForTeam(user, team) {
 async function checkInTeam(req, res) {
   try {
     const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+      return res.status(400).json({ error: 'Team ID parameter is required.' });
+    }
 
     const team = await prisma.team.findUnique({ where: { id } });
     if (!team) {
@@ -64,6 +67,9 @@ async function checkInTeam(req, res) {
 async function getTeamEngagement(req, res) {
   try {
     const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+      return res.status(400).json({ error: 'Team ID parameter is required.' });
+    }
 
     const team = await prisma.team.findUnique({
       where: { id },
@@ -123,6 +129,7 @@ async function getTeamEngagement(req, res) {
 async function getEngagementDashboard(req, res) {
   try {
     const teams = await prisma.team.findMany({
+      take: 100,
       include: { engagementEvents: true, submissions: true },
     });
 
