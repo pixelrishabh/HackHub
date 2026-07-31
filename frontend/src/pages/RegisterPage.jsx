@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { AVAILABLE_FIELDS } from '../config/fieldConfig';
-import { Sparkles, UserCheck, AlertCircle, ArrowRight, ShieldAlert } from 'lucide-react';
+import { Sparkles, UserCheck, AlertCircle, ArrowRight } from 'lucide-react';
+import { Page3DCanvas } from '../components/Page3DCanvas';
 
 const COMMON_SKILLS = [
   'React', 'Node.js', 'Python', 'TypeScript', 'TensorFlow', 'PyTorch',
@@ -57,32 +58,37 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-xl text-center">
-        <div className="w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center text-white mx-auto shadow-md shadow-primary-500/30">
-          <Sparkles className="w-6 h-6" />
+    <div className="relative min-h-[calc(100vh-80px)] bg-[#050505] text-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      {/* 3D Background Identity element */}
+      <div className="absolute top-10 right-10 w-96 h-96 opacity-30 pointer-events-none hidden md:block">
+        <Page3DCanvas type="quantum" />
+      </div>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-xl text-center relative z-10">
+        <div className="w-14 h-14 bg-white/10 border border-white/20 rounded-2xl flex items-center justify-center text-white mx-auto shadow-2xl backdrop-blur-xl">
+          <Sparkles className="w-7 h-7 text-accentCyan animate-pulse" />
         </div>
-        <h2 className="mt-4 text-2xl font-extrabold text-slate-900 tracking-tight">
-          Join HackHub
+        <h2 className="mt-5 text-3xl font-black text-white tracking-tight uppercase">
+          Join <span className="text-glow">HackHub</span>
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-2 text-xs text-slate-400 font-medium uppercase tracking-wider">
           Create your participant account and set up your hackathon profile
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
-        <div className="bg-white py-8 px-4 shadow-sm border border-slate-200/80 sm:rounded-2xl sm:px-10">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl relative z-10">
+        <div className="glass-panel p-8 sm:p-10 rounded-[28px] border border-white/15 shadow-2xl backdrop-blur-2xl">
           {/* Public Signup Role Notice */}
-          <div className="mb-6 p-3 bg-primary-50 border border-primary-200 rounded-xl text-xs text-primary-800 flex items-start space-x-2">
-            <UserCheck className="w-4 h-4 flex-shrink-0 text-primary-600 mt-0.5" />
+          <div className="mb-6 p-4 bg-white/5 border border-white/15 rounded-2xl text-xs text-slate-300 flex items-start space-x-3">
+            <UserCheck className="w-5 h-5 flex-shrink-0 text-accentCyan mt-0.5" />
             <div>
-              <span className="font-bold">Public Registration Role:</span> Student / Participant. (Staff accounts for organizers, judges, and mentors are provisioned via staff login).
+              <span className="font-bold text-white">Public Registration Role:</span> Student / Participant. (Staff accounts are created by organizers).
             </div>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start space-x-2 text-rose-700 text-xs">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div className="mb-6 p-4 bg-rose-500/20 border border-rose-500/40 rounded-2xl flex items-start space-x-2 text-rose-300 text-xs">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
@@ -91,150 +97,132 @@ export function RegisterPage() {
             {/* Account Basics */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Full Name *</label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
-                  placeholder="Alex Chen"
+                  className="w-full px-4 py-3 text-sm bg-white/5 border border-white/15 text-white rounded-xl focus:border-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder-slate-500"
+                  placeholder="Alex Rivera"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address *</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Email Address *</label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                  className="w-full px-4 py-3 text-sm bg-white/5 border border-white/15 text-white rounded-xl focus:border-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder-slate-500"
                   placeholder="alex@university.edu"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Password * (Min 8 chars)</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Password *</label>
               <input
                 type="password"
                 required
                 minLength={8}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
-                placeholder="••••••••"
+                className="w-full px-4 py-3 text-sm bg-white/5 border border-white/15 text-white rounded-xl focus:border-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder-slate-500"
+                placeholder="Minimum 8 characters"
               />
             </div>
 
-            {/* Primary Field Selection */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Primary Field / Track Focus *
-              </label>
-              <select
-                value={formData.primary_field}
-                onChange={(e) => setFormData({ ...formData, primary_field: e.target.value })}
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg bg-surface font-medium text-slate-800 focus:ring-2 focus:ring-primary-500 focus:outline-none"
-              >
-                {AVAILABLE_FIELDS.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-[11px] text-slate-400">
-                Your dashboard layout, empty states, and suggested AI prompts will personalize to this field!
-              </p>
-            </div>
-
-            {/* Experience Level & Timezone */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Profile Config */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Experience Level</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Primary Track Theme *</label>
                 <select
-                  value={formData.experience_level}
-                  onChange={(e) => setFormData({ ...formData, experience_level: e.target.value })}
-                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
+                  value={formData.primary_field}
+                  onChange={(e) => setFormData({ ...formData, primary_field: e.target.value })}
+                  className="w-full px-4 py-3 text-sm bg-black border border-white/15 text-white rounded-xl focus:border-white focus:outline-none"
                 >
-                  <option value="Beginner">Beginner</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Advanced">Advanced</option>
+                  {AVAILABLE_FIELDS.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Timezone</label>
-                <input
-                  type="text"
-                  value={formData.timezone}
-                  onChange={(e) => setFormData({ ...formData, timezone: e.target.value })}
-                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
-                  placeholder="UTC / EST / PST"
-                />
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Experience Level *</label>
+                <select
+                  value={formData.experience_level}
+                  onChange={(e) => setFormData({ ...formData, experience_level: e.target.value })}
+                  className="w-full px-4 py-3 text-sm bg-black border border-white/15 text-white rounded-xl focus:border-white focus:outline-none"
+                >
+                  <option value="Beginner">Beginner (1st Hackathon)</option>
+                  <option value="Intermediate">Intermediate (1-3 Hackathons)</option>
+                  <option value="Advanced">Advanced (Veteran)</option>
+                </select>
               </div>
             </div>
 
-            {/* Skills Multi-Select Chips */}
+            {/* Skills Selector */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Technical Skills (Select your core stack)
+              <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">
+                Select Your Technical Skills
               </label>
-              <div className="flex flex-wrap gap-1.5 p-3 bg-surface rounded-xl border border-slate-200">
+              <div className="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-2 rounded-xl bg-white/5 border border-white/10">
                 {COMMON_SKILLS.map((skill) => {
-                  const isSelected = formData.skills.includes(skill);
+                  const selected = formData.skills.includes(skill);
                   return (
                     <button
                       key={skill}
                       type="button"
                       onClick={() => toggleSkill(skill)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                        isSelected
-                          ? 'bg-primary-500 text-white shadow-sm'
-                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        selected
+                          ? 'bg-white text-black font-bold shadow-md'
+                          : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
                       }`}
                     >
-                      {skill} {isSelected && '✓'}
+                      {skill} {selected ? '✓' : '+'}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Project Goal */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Project Goal / Hackathon Objective
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                Hackathon Project Goal
               </label>
               <textarea
                 rows={2}
                 value={formData.project_goal_text}
                 onChange={(e) => setFormData({ ...formData, project_goal_text: e.target.value })}
-                className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:outline-none"
-                placeholder="Want to build an AI-assisted RAG app with vector search and sleek UX..."
+                className="w-full px-4 py-3 text-sm bg-white/5 border border-white/15 text-white rounded-xl focus:border-white focus:outline-none placeholder-slate-500"
+                placeholder="E.g. Building an autonomous agent to automate code reviews."
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-primary-500 hover:bg-primary-600 text-white font-semibold text-sm rounded-xl shadow-sm transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+              className="w-full py-4 px-4 rounded-xl text-black font-extrabold text-sm bg-white hover:bg-slate-100 shadow-xl shadow-white/10 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
             >
               {loading ? (
                 <span>Creating Account...</span>
               ) : (
                 <>
-                  <span>Complete Participant Registration</span>
+                  <span>Complete Registration</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-slate-500">
+          <div className="mt-6 text-center text-xs text-slate-400">
             Already registered?{' '}
-            <Link to="/login" className="font-semibold text-primary-600 hover:text-primary-700">
+            <Link to="/login" className="font-bold text-white hover:text-accentCyan underline">
               Sign in here
             </Link>
           </div>

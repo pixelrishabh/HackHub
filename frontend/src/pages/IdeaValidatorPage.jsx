@@ -2,15 +2,10 @@ import React, { useState } from 'react';
 import { validateIdea } from '../api/ideas';
 import { Badge } from '../components/Badge';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { useLanguage } from '../context/LanguageContext';
-import {
-  FileCode, Sparkles, Clock, CheckCircle2, AlertTriangle, 
-  Lightbulb, Scissors, AlertCircle, BarChart3, TrendingUp, 
-  Layers, ShieldAlert, Check, HelpCircle
-} from 'lucide-react';
+import { FileCode, Sparkles, Clock, CheckCircle2, AlertTriangle, Lightbulb, Scissors } from 'lucide-react';
+import { Page3DCanvas } from '../components/Page3DCanvas';
 
 export function IdeaValidatorPage() {
-  const { t } = useLanguage();
   const [ideaDescription, setIdeaDescription] = useState('');
   const [hoursRemaining, setHoursRemaining] = useState(18);
   const [loading, setLoading] = useState(false);
@@ -38,245 +33,139 @@ export function IdeaValidatorPage() {
     }
   };
 
-  const getScoreColor = (score) => {
-    if (score >= 80) return 'text-emerald-600 bg-emerald-50 border-emerald-200';
-    if (score >= 60) return 'text-amber-600 bg-amber-50 border-amber-200';
-    return 'text-rose-600 bg-rose-50 border-rose-200';
-  };
-
-  const getBarColor = (score) => {
-    if (score >= 80) return 'bg-gradient-to-r from-emerald-500 to-teal-400';
-    if (score >= 60) return 'bg-gradient-to-r from-amber-400 to-amber-500';
-    return 'bg-gradient-to-r from-rose-500 to-red-400';
-  };
-
-  const scoresMap = result?.scores || {
-    innovation: result?.overall_score ? Math.round(result.overall_score * 0.95) : 80,
-    feasibility: result?.feasibility === 'green' ? 88 : (result?.feasibility === 'yellow' ? 70 : 50),
-    market_potential: 82,
-    technical_complexity: 78,
-    scalability: 80,
-    clarity: 85,
-    overall_quality: result?.overall_score || 82,
-  };
-
-  const overallScore = result?.overall_score || scoresMap.overall_quality || 80;
-
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 text-white">
+      {/* Decorative 3D Holographic Matrix */}
+      <div className="absolute top-0 right-0 w-80 h-80 opacity-25 pointer-events-none hidden lg:block">
+        <Page3DCanvas type="matrix" />
+      </div>
+
       {/* Header */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="glass-panel p-6 sm:p-8 rounded-[28px] border border-white/15 backdrop-blur-2xl shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <div className="inline-flex items-center space-x-1.5 px-3 py-1 bg-primary-50 text-primary-700 text-xs font-semibold rounded-full border border-primary-200 mb-3">
-            <Sparkles className="w-3.5 h-3.5 text-primary-500" />
-            <span>AI Evaluation Engine</span>
+          <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 text-accentCyan text-xs font-semibold rounded-full border border-white/20 mb-3">
+            <FileCode className="w-3.5 h-3.5" />
+            <span>Hackathon MVP Scope Calculator</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{t('idea_title')}</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            {t('idea_subtitle')}
+          <h1 className="text-3xl font-black text-white tracking-tight uppercase">Realtime Idea Validator</h1>
+          <p className="text-xs text-slate-300 max-w-2xl font-normal mt-1 leading-relaxed">
+            Test project scope feasibility against remaining build hours with instant MVP scope reduction recommendations.
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold rounded-2xl flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
+        <div className="p-4 bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold rounded-2xl flex items-center space-x-2">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Input Form */}
-      <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-xs">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider">
-              Hackathon Idea & Architecture Description *
-            </label>
-            <textarea
-              rows={4}
-              required
-              value={ideaDescription}
-              onChange={(e) => setIdeaDescription(e.target.value)}
-              className="w-full px-4 py-3 text-sm border border-slate-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:outline-none bg-surface/50"
-              placeholder={t('idea_placeholder')}
-            />
-          </div>
+      {/* Form and Analysis Results */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Scope Inputs (5 cols) */}
+        <div className="lg:col-span-5 glass-panel p-6 sm:p-8 rounded-[28px] border border-white/15 backdrop-blur-2xl shadow-2xl space-y-5">
+          <h2 className="text-base font-bold text-white border-b border-white/10 pb-3">Project Scope Parameters</h2>
 
-          <div>
-            <label className="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wider flex items-center justify-between">
-              <span className="flex items-center space-x-1">
-                <Clock className="w-4 h-4 text-primary-500" />
-                <span>{t('idea_hours_remaining')}</span>
-              </span>
-              <span className="text-sm font-extrabold text-primary-600 bg-primary-50 px-3 py-0.5 rounded-full border border-primary-200">
-                {hoursRemaining} hours
-              </span>
-            </label>
-            <input
-              type="range"
-              min="2"
-              max="48"
-              step="1"
-              value={hoursRemaining}
-              onChange={(e) => setHoursRemaining(Number(e.target.value))}
-              className="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-500"
-            />
-            <div className="flex justify-between text-[11px] text-slate-400 mt-1">
-              <span>2h (Final Sprint)</span>
-              <span>24h (Full Day)</span>
-              <span>48h (Weekend Hackathon)</span>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">
+                Idea & Architecture Overview *
+              </label>
+              <textarea
+                rows={4}
+                required
+                value={ideaDescription}
+                onChange={(e) => setIdeaDescription(e.target.value)}
+                className="w-full px-4 py-3 bg-white/5 border border-white/15 text-white text-xs rounded-xl focus:border-white focus:outline-none placeholder-slate-500"
+                placeholder="An automated RAG search engine for legal document analysis with realtime WebSockets..."
+              />
             </div>
-          </div>
 
-          <button
-            type="submit"
-            disabled={loading || !ideaDescription.trim()}
-            className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-bold text-sm rounded-2xl shadow-md shadow-primary-500/20 transition-all active:scale-98 flex items-center justify-center space-x-2.5 disabled:opacity-50"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span>{loading ? 'Evaluating Idea across 7 Metrics...' : t('idea_submit_button')}</span>
-          </button>
-        </form>
-      </div>
+            <div>
+              <div className="flex justify-between items-center mb-1.5">
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Hours Remaining</label>
+                <span className="text-xs font-black text-accentCyan">{hoursRemaining} hrs</span>
+              </div>
+              <input
+                type="range"
+                min="2"
+                max="48"
+                step="1"
+                value={hoursRemaining}
+                onChange={(e) => setHoursRemaining(Number(e.target.value))}
+                className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-white"
+              />
+              <div className="flex justify-between text-[9px] text-slate-400 mt-1">
+                <span>2 hrs (Final Polish)</span>
+                <span>24 hrs</span>
+                <span>48 hrs (Full Build)</span>
+              </div>
+            </div>
 
-      {loading && (
-        <div className="p-12 bg-white rounded-3xl border border-slate-200 text-center shadow-xs">
-          <LoadingSpinner label="AI is calculating 7-dimensional feasibility, innovation & risk analysis..." size="lg" />
+            <button
+              type="submit"
+              disabled={loading || !ideaDescription.trim()}
+              className="w-full py-3.5 bg-white text-black font-extrabold text-xs rounded-xl shadow-xl transition-all disabled:opacity-50"
+            >
+              {loading ? 'Analyzing Scope Feasibility...' : 'Validate Feasibility with AI'}
+            </button>
+          </form>
         </div>
-      )}
 
-      {/* Styled AI Evaluation Scorecard */}
-      {result && (
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-lg space-y-8 animate-fade-in">
-          
-          {/* Header Score Banner */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-6 border-b border-slate-100">
-            <div className="flex items-center space-x-4">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border font-black text-2xl ${getScoreColor(overallScore)}`}>
-                {overallScore}
-              </div>
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">{t('idea_overall_score')}</h3>
-                <p className="text-xs text-slate-500">Evaluated against {hoursRemaining} hours remaining</p>
-              </div>
+        {/* Right Column: AI Analysis Scorecard (7 cols) */}
+        <div className="lg:col-span-7 glass-panel p-6 sm:p-8 rounded-[28px] border border-white/15 backdrop-blur-2xl shadow-2xl space-y-6">
+          <h2 className="text-base font-bold text-white border-b border-white/10 pb-3 flex items-center justify-between">
+            <span>Scope Analysis & Feasibility Verdict</span>
+            {result && <Badge variant={result.is_feasible ? 'success' : 'warning'}>{result.badge_text || 'Analyzed'}</Badge>}
+          </h2>
+
+          {loading ? (
+            <div className="min-h-[300px] flex items-center justify-center">
+              <LoadingSpinner label="Calculating build hour feasibility..." size="md" />
             </div>
-
-            <Badge variant={result.feasibility === 'green' ? 'success' : (result.feasibility === 'yellow' ? 'warning' : 'danger')}>
-              Feasibility: {(result.feasibility || 'GREEN').toUpperCase()}
-            </Badge>
-          </div>
-
-          {/* AI Executive Summary */}
-          {(result.summary || result.scope_note) && (
-            <div className="p-5 bg-primary-50/60 border border-primary-200/80 rounded-2xl space-y-1.5">
-              <span className="text-xs font-extrabold text-primary-900 uppercase tracking-wider block">
-                {t('idea_executive_summary')}
-              </span>
-              <p className="text-sm text-primary-950 font-medium leading-relaxed">
-                {result.summary || result.scope_note}
-              </p>
-            </div>
-          )}
-
-          {/* 7 Core Criteria Score Breakdown */}
-          <div className="space-y-4">
-            <h4 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center space-x-2">
-              <BarChart3 className="w-4 h-4 text-primary-500" />
-              <span>7-Dimensional Score Breakdown</span>
-            </h4>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                { label: t('idea_dim_innovation'), score: scoresMap.innovation },
-                { label: t('idea_dim_feasibility'), score: scoresMap.feasibility },
-                { label: t('idea_dim_market'), score: scoresMap.market_potential },
-                { label: t('idea_dim_technical'), score: scoresMap.technical_complexity },
-                { label: t('idea_dim_scalability'), score: scoresMap.scalability },
-                { label: t('idea_dim_clarity'), score: scoresMap.clarity },
-                { label: t('idea_dim_quality'), score: scoresMap.overall_quality },
-              ].map((dim, idx) => (
-                <div key={idx} className="p-3.5 bg-surface rounded-xl border border-slate-100 space-y-2">
-                  <div className="flex justify-between text-xs font-bold text-slate-700">
-                    <span>{dim.label}</span>
-                    <span className="font-extrabold text-slate-900">{dim.score}/100</span>
-                  </div>
-                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${getBarColor(dim.score)}`}
-                      style={{ width: `${dim.score}%` }}
-                    ></div>
-                  </div>
+          ) : result ? (
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/12">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">Feasibility Tier</div>
+                  <div className="text-2xl font-black text-accentCyan">{result.badge_text || 'Feasible'}</div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Strengths, Weaknesses, Suggestions Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-            
-            {/* Strengths */}
-            <div className="p-5 bg-emerald-50/70 border border-emerald-200 rounded-2xl space-y-3">
-              <h5 className="text-xs font-extrabold text-emerald-900 uppercase tracking-wider flex items-center space-x-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>{t('idea_strengths')}</span>
-              </h5>
-              <ul className="space-y-2">
-                {(result.strengths || [result.originality || 'Fresh concept with practical value.']).map((item, idx) => (
-                  <li key={idx} className="text-xs text-emerald-950 font-medium flex items-start space-x-2">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Weaknesses / Risks */}
-            <div className="p-5 bg-amber-50/70 border border-amber-200 rounded-2xl space-y-3">
-              <h5 className="text-xs font-extrabold text-amber-900 uppercase tracking-wider flex items-center space-x-1.5">
-                <ShieldAlert className="w-4 h-4 text-amber-600" />
-                <span>{t('idea_weaknesses')}</span>
-              </h5>
-              <ul className="space-y-2">
-                {(result.weaknesses || [result.scope_note || 'Scope requires careful timeline management.']).map((item, idx) => (
-                  <li key={idx} className="text-xs text-amber-950 font-medium flex items-start space-x-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Improvement Suggestions */}
-            <div className="p-5 bg-primary-50/70 border border-primary-200 rounded-2xl space-y-3">
-              <h5 className="text-xs font-extrabold text-primary-900 uppercase tracking-wider flex items-center space-x-1.5">
-                <Lightbulb className="w-4 h-4 text-primary-600" />
-                <span>{t('idea_suggestions')}</span>
-              </h5>
-              <ul className="space-y-2">
-                {(result.improvement_suggestions || [result.suggested_mvp || 'Focus on core user journey first.']).map((item, idx) => (
-                  <li key={idx} className="text-xs text-primary-950 font-medium flex items-start space-x-2">
-                    <Sparkles className="w-3.5 h-3.5 text-primary-600 flex-shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-          </div>
-
-          {/* Suggested MVP Scope Cut */}
-          {(result.suggested_mvp || result.suggested_mvp_cut) && (
-            <div className="p-4 bg-slate-900 text-white rounded-2xl flex items-center space-x-3">
-              <Scissors className="w-5 h-5 text-primary-400 flex-shrink-0" />
-              <div className="text-xs space-y-0.5">
-                <span className="font-extrabold text-primary-400 uppercase tracking-wider block">Recommended MVP Focus</span>
-                <p className="text-slate-300 font-medium">{result.suggested_mvp || result.suggested_mvp_cut}</p>
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/12">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">Est. Build Hours</div>
+                  <div className="text-3xl font-black text-white">{result.estimated_hours || hoursRemaining} hrs</div>
+                </div>
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/12 col-span-2 sm:col-span-1">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">Complexity</div>
+                  <div className="text-xl font-extrabold text-emerald-400">{result.complexity || 'Moderate'}</div>
+                </div>
               </div>
+
+              {result.reasoning && (
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-xs text-slate-300 space-y-2">
+                  <span className="font-bold text-white block">AI Feasibility Reasoning:</span>
+                  <p className="leading-relaxed">{result.reasoning}</p>
+                </div>
+              )}
+
+              {result.scope_reductions?.length > 0 && (
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-xs text-slate-300 space-y-2">
+                  <span className="font-bold text-white block">Recommended MVP Scope Cuts:</span>
+                  <ul className="list-disc pl-4 space-y-1">
+                    {result.scope_reductions.map((cut, idx) => (
+                      <li key={idx}>{cut}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="p-12 text-center bg-white/5 rounded-2xl border border-white/10 text-xs text-slate-400">
+              Submit your project scope parameters on the left to receive instant feasibility scoring & scope cut recommendations.
             </div>
           )}
-
         </div>
-      )}
+      </div>
     </div>
   );
 }

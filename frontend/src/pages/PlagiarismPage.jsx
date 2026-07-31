@@ -1,177 +1,118 @@
 import React, { useState, useEffect } from 'react';
 import { checkSimilarity, getSimilarityFlags } from '../api/submissions';
+import { getAllTeams } from '../api/teams';
 import { StatCard } from '../components/StatCard';
-import { EmptyState } from '../components/EmptyState';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Badge } from '../components/Badge';
-import { ShieldCheck, AlertTriangle, Sparkles, AlertCircle, RefreshCw, Github } from 'lucide-react';
+import { Sparkles, ShieldCheck, AlertCircle, FileCode, ShieldAlert } from 'lucide-react';
+import { Page3DCanvas } from '../components/Page3DCanvas';
 
 export function PlagiarismPage() {
-  const [flags, setFlags] = useState([]);
-  const [threshold, setThreshold] = useState(0.85);
+  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [scanning, setScanning] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
   const [error, setError] = useState('');
-  const [scanMessage, setScanMessage] = useState('');
+  const [scanResults, setScanResults] = useState(null);
 
-  const loadFlags = async () => {
+  const loadData = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await getSimilarityFlags();
-      setFlags(res.flagged_pairs || []);
+      const res = await getAllTeams();
+      setTeams(res.teams || []);
     } catch (err) {
-      setError(err.message || 'Failed to fetch similarity flags.');
+      setError(err.message || 'Failed to load teams.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadFlags();
+    loadData();
   }, []);
 
   const handleRunScan = async () => {
-    setScanning(true);
+    setScanLoading(true);
     setError('');
-    setScanMessage('');
     try {
-      const res = await checkSimilarity(threshold);
-      setScanMessage(res.message || `Similarity check completed over ${res.total_submissions || 0} submissions.`);
-      setFlags(res.flagged_pairs || []);
+      const res = await checkSimilarity(0.75);
+      setScanResults(res.flagged_pairs || res);
     } catch (err) {
-      setError(err.message || 'Similarity check failed.');
+      setError(err.message || 'Plagiarism scan failed.');
     } finally {
-      setScanning(false);
+      setScanLoading(false);
     }
   };
 
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
-        <LoadingSpinner label="Loading plagiarism & similarity radar..." size="lg" />
+        <LoadingSpinner label="Loading Plagiarism & Similarity Radar..." size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 text-white">
+      {/* Decorative 3D Radar Shield Element */}
+      <div className="absolute top-0 right-0 w-80 h-80 opacity-25 pointer-events-none hidden lg:block">
+        <Page3DCanvas type="shield" />
+      </div>
+
       {/* Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="glass-panel p-6 sm:p-8 rounded-[28px] border border-white/15 backdrop-blur-2xl shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-primary-50 text-primary-700 text-xs font-semibold rounded-md border border-primary-200 mb-2">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 text-accentCyan text-xs font-semibold rounded-full border border-white/20 mb-3">
             <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Organizer / Judge Anti-Plagiarism Tool</span>
+            <span>Organizer Code Integrity Defense</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Code Similarity & Plagiarism Radar</h1>
-          <p className="text-sm text-slate-500">
-            Compare submitted repositories and project descriptions to detect potential code duplication.
+          <h1 className="text-3xl font-black text-white tracking-tight uppercase">Plagiarism & Code Similarity Radar</h1>
+          <p className="text-xs text-slate-300 max-w-2xl font-normal mt-1 leading-relaxed">
+            Automated submission comparison alerting organizers of duplicate codebase structures and threshold flags.
           </p>
         </div>
 
-        {/* Scan Actions & Threshold Selector */}
-        <div className="flex items-center space-x-3 bg-surface p-2.5 rounded-xl border border-slate-200">
-          <div className="flex flex-col text-right">
-            <label className="text-[10px] font-bold uppercase text-slate-400">Threshold: {(threshold * 100).toFixed(0)}%</label>
-            <input
-              type="range"
-              min="0.50"
-              max="0.95"
-              step="0.05"
-              value={threshold}
-              onChange={(e) => setThreshold(parseFloat(e.target.value))}
-              className="w-24 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-primary-500"
-            />
-          </div>
-
-          <button
-            onClick={handleRunScan}
-            disabled={scanning}
-            className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center space-x-1.5 disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${scanning ? 'animate-spin' : ''}`} />
-            <span>{scanning ? 'Scanning...' : 'Run Similarity Scan'}</span>
-          </button>
-        </div>
+        <button
+          onClick={handleRunScan}
+          disabled={scanLoading}
+          className="inline-flex items-center justify-center space-x-2 px-6 py-3.5 bg-white text-black font-extrabold text-xs rounded-xl shadow-xl transition-all disabled:opacity-50 flex-shrink-0"
+        >
+          <Sparkles className="w-4 h-4 text-black" />
+          <span>{scanLoading ? 'Scanning Repositories...' : 'Run Similarity Radar Scan'}</span>
+        </button>
       </div>
 
-      {scanMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center space-x-2">
-          <Sparkles className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-          <span>{scanMessage}</span>
-        </div>
-      )}
-
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold rounded-xl flex items-center space-x-2">
+        <div className="p-4 bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold rounded-2xl flex items-center space-x-2">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Flagged Submission Pairs" value={flags.length} icon={AlertTriangle} color={flags.length > 0 ? 'green' : 'cyan'} />
-        <StatCard title="Scan Threshold" value={`${(threshold * 100).toFixed(0)}%`} icon={ShieldCheck} color="cyan" />
-        <StatCard title="Status" value={flags.length === 0 ? 'Clean' : 'Review Required'} icon={Sparkles} color="green" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <StatCard title="Active Submissions Scanned" value={teams.filter((t) => t.submissions?.length > 0).length} icon={FileCode} color="cyan" />
+        <StatCard title="Similarity Threshold Alert" value="> 75%" icon={ShieldAlert} color="green" subtext="Automated Organizer Flag" />
+        <StatCard title="Scan Engine Status" value="Online" icon={ShieldCheck} color="cyan" subtext="AST & Token Overlap" />
       </div>
 
-      {/* Flagged Pairs List */}
-      <div>
-        <h2 className="text-lg font-bold text-slate-900 mb-4">Flagged High-Similarity Pairs</h2>
+      {/* Scan Results Display */}
+      {scanResults ? (
+        <div className="glass-panel p-6 sm:p-8 rounded-[28px] border border-white/15 backdrop-blur-2xl shadow-2xl space-y-6">
+          <h2 className="text-lg font-bold text-white border-b border-white/10 pb-4 flex items-center justify-between">
+            <span>Scan Report & Flagged Pairs</span>
+            <Badge variant="success">Scan Complete</Badge>
+          </h2>
 
-        {flags.length === 0 ? (
-          <EmptyState
-            title="No Plagiarism or Duplicate Submissions Flagged"
-            description="All scanned project submissions show original codebase structure and descriptions within safety thresholds."
-            icon={ShieldCheck}
-            actionLabel="Run Fresh Scan"
-            onAction={handleRunScan}
-          />
-        ) : (
-          <div className="space-y-4">
-            {flags.map((flag, idx) => {
-              const pair = flag.pair || [];
-              const score = (flag.similarity_score * 100).toFixed(1);
-
-              return (
-                <div key={idx} className="bg-white p-6 rounded-2xl border border-rose-200 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center space-x-2 text-rose-700 font-bold text-sm">
-                      <AlertTriangle className="w-4 h-4" />
-                      <span>Flagged Pair #{idx + 1} — Similarity: {score}%</span>
-                    </div>
-                    <Badge variant="danger">HIGH SIMILARITY</Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {pair.map((sub, sIdx) => (
-                      <div key={sIdx} className="p-4 bg-surface rounded-xl border border-slate-200 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-800">{sub.team_name || `Team ${sIdx + 1}`}</span>
-                          {sub.repo_link && (
-                            <a href={sub.repo_link} target="_blank" rel="noreferrer" className="text-xs text-primary-600 font-semibold flex items-center space-x-1">
-                              <Github className="w-3.5 h-3.5" />
-                              <span>View Repo</span>
-                            </a>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500 line-clamp-2">{sub.description || 'No description provided'}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {flag.reason && (
-                    <div className="p-3 bg-rose-50 text-rose-800 text-xs rounded-xl font-medium">
-                      <span className="font-bold">Flag Rationale:</span> {flag.reason}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          <div className="p-4 bg-white/5 rounded-2xl border border-white/10 text-xs text-slate-300">
+            {typeof scanResults === 'string' ? scanResults : JSON.stringify(scanResults, null, 2)}
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="glass-panel p-12 text-center rounded-[28px] border border-white/15 backdrop-blur-2xl text-xs text-slate-400">
+          Click 'Run Similarity Radar Scan' above to compare all project submission codebases for overlap flags.
+        </div>
+      )}
     </div>
   );
 }

@@ -107,6 +107,14 @@ export function AuthProvider({ children }) {
     return createStaffUser(staffData);
   };
 
+  const updateUser = useCallback((updatedUserData) => {
+    setUser((prev) => {
+      const merged = { ...prev, ...updatedUserData };
+      localStorage.setItem('user', JSON.stringify(merged));
+      return merged;
+    });
+  }, []);
+
   const value = {
     token,
     user,
@@ -116,6 +124,7 @@ export function AuthProvider({ children }) {
       setPrimaryField(field);
       localStorage.setItem('primaryField', field);
     },
+    updateUser,
     loading,
     isAuthenticated: !!token && !!user,
     isStaff: ['organizer', 'judge', 'mentor', 'sponsor'].includes((user?.role || '').toLowerCase()),
@@ -126,13 +135,6 @@ export function AuthProvider({ children }) {
     register,
     createStaff,
     logout,
-    updateUserSession: (updatedUser) => {
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      const field = parsePrimaryField(updatedUser);
-      setPrimaryField(field);
-      localStorage.setItem('primaryField', field);
-    },
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

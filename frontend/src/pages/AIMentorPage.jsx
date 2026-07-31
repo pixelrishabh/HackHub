@@ -1,313 +1,412 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { getFieldConfig } from '../config/fieldConfig';
-import { getAllTeams } from '../api/teams';
 import { sendMentorMessage, getChatHistory } from '../api/mentor';
-import { LoadingSpinner } from '../components/LoadingSpinner';
-import { EmptyState } from '../components/EmptyState';
-import { Badge } from '../components/Badge';
+import { getAllTeams } from '../api/teams';
+import { MentorModeSelector } from '../components/mentor/MentorModeSelector';
+import { RichMessageRenderer } from '../components/mentor/RichMessageRenderer';
+import { SmartSuggestions } from '../components/mentor/SmartSuggestions';
+import { ProjectAwarenessCard } from '../components/mentor/ProjectAwarenessCard';
+import { ProjectReviewModal } from '../components/mentor/ProjectReviewModal';
+import { FileUploadModal } from '../components/mentor/FileUploadModal';
+import { Page3DCanvas } from '../components/Page3DCanvas';
 import {
   Bot,
   Send,
   Github,
-  Sparkles,
   BookOpen,
-  User,
   AlertCircle,
-  HelpCircle,
-  Code
+  Sparkles,
+  Paperclip,
+  Award,
+  RefreshCw,
+  Zap,
+  Code2,
+  Palette,
+  Trophy,
+  Rocket
 } from 'lucide-react';
 
 export function AIMentorPage() {
-  const { user, isStaff, primaryField } = useAuth();
-  const fieldConfig = getFieldConfig(primaryField);
-
   const [teams, setTeams] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [repoLink, setRepoLink] = useState('');
-  const [loadingTeams, setLoadingTeams] = useState(true);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [currentMode, setCurrentMode] = useState('developer');
+  const [repoUrl, setRepoUrl] = useState('https://github.com/neuralcrafters/hackops-agent');
+  const [attachments, setAttachments] = useState([]);
+
+  const [messages, setMessages] = useState([
+    {
+      role: 'assistant',
+      mode: 'developer',
+      text: `Hello! I am your 24/7 **AI Technical Teammate & Mentor**.
+
+I am trained across 4 specialized hackathon personas:
+- 💻 **Developer Mode**: Systems architecture, code reviews, debugging & framework comparisons.
+- 🎨 **Designer Mode**: UI/UX design, luxury glassmorphic layouts & micro-animations.
+- ⚖️ **Judge Mode**: Hackathon rubric scoring & demo video polish.
+- 🚀 **Startup Advisor Mode**: Value proposition, pitch deck outlines & market fit strategy.
+
+How can I help you build a winning submission today?`,
+      suggestions: ['Review Architecture', 'Optimize Performance', 'Improve UI', 'Run 9-Point Scorecard'],
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    },
+  ]);
+
+  const [inputQuery, setInputQuery] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const chatBottomRef = useRef(null);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [fileModalOpen, setFileModalOpen] = useState(false);
 
-  // Load accessible teams
+  const chatEndRef = useRef(null);
+
+  // Load user teams & history
   useEffect(() => {
-    async function loadTeams() {
-      setLoadingTeams(true);
-      setError('');
+    async function loadTeamsAndHistory() {
       try {
         const res = await getAllTeams();
-        const availableTeams = res.teams || [];
-        setTeams(availableTeams);
-        if (availableTeams.length > 0) {
-          setSelectedTeamId(availableTeams[0].id);
+        const userTeams = res.teams || [];
+        setTeams(userTeams);
+        if (userTeams.length > 0) {
+          const activeTeamId = userTeams[0].id;
+          setSelectedTeamId(activeTeamId);
+
+          // Hydrate past chat history from DB
+          try {
+            const histRes = await getChatHistory(activeTeamId);
+            if (histRes.history && histRes.history.length > 0) {
+              const formatted = histRes.history.map((h) => ({
+                role: h.sender === 'user' ? 'user' : 'assistant',
+                mode: h.mode || 'developer',
+                text: h.content,
+                suggestions: h.suggestions || [],
+                fileAttachments: h.fileAttachments || [],
+                timestamp: new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              }));
+              setMessages(formatted);
+            }
+          } catch (e) {
+            console.warn('Could not load past chat history:', e);
+          }
         }
-      } catch (err) {
-        setError(err.message || 'Failed to fetch team list.');
-      } finally {
-        setLoadingTeams(false);
+      } catch (e) {
+        console.warn('Failed to fetch user teams:', e);
       }
     }
-
-    loadTeams();
+    loadTeamsAndHistory();
   }, []);
 
-  // Fetch chat history whenever selectedTeamId changes
   useEffect(() => {
-    if (!selectedTeamId) return;
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, chatLoading]);
 
-    async function loadHistory() {
-      setLoadingHistory(true);
-      setError('');
-      try {
-        const res = await getChatHistory(selectedTeamId);
-        setMessages(res.history || []);
-      } catch (err) {
-        setError(err.message || 'Failed to load mentor chat history.');
-      } finally {
-        setLoadingHistory(false);
-      }
-    }
+  const handleSendMessage = async (textToSend, customMode = null) => {
+    const messageContent = (textToSend || inputQuery).trim();
+    if (!messageContent || chatLoading) return;
 
-    loadHistory();
-  }, [selectedTeamId]);
+    const targetMode = customMode || currentMode;
 
-  // Scroll chat to bottom
-  useEffect(() => {
-    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, sending]);
-
-  const handleSendMessage = async (msgToSend = inputMessage) => {
-    if (!msgToSend || !msgToSend.trim() || !selectedTeamId) return;
-
-    const trimmedMsg = msgToSend.trim();
-    setInputMessage('');
-    setSending(true);
+    setInputQuery('');
     setError('');
 
-    // Optimistic UI append user message
-    const tempUserMsg = {
-      id: `temp-${Date.now()}`,
-      sender: 'user',
-      content: trimmedMsg,
-      timestamp: new Date().toISOString(),
+    const newMsg = {
+      role: 'user',
+      mode: targetMode,
+      text: messageContent,
+      fileAttachments: attachments,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
-    setMessages((prev) => [...prev, tempUserMsg]);
+
+    setMessages((prev) => [...prev, newMsg]);
+    setChatLoading(true);
 
     try {
       const res = await sendMentorMessage({
-        team_id: selectedTeamId,
-        message: trimmedMsg,
-        repo_link: repoLink || undefined,
+        team_id: selectedTeamId || undefined,
+        message: messageContent,
+        mode: targetMode,
+        repo_link: repoUrl || undefined,
+        file_attachments: attachments,
       });
 
-      if (res.response) {
-        setMessages((prev) => [...prev, res.response]);
-      }
+      const responseObj = res.response || res;
+
+      const assistantMsg = {
+        role: 'assistant',
+        mode: responseObj.mode || targetMode,
+        text: responseObj.content || responseObj.answer || 'No response generated.',
+        suggestions: responseObj.suggestions || ['Review Architecture', 'Improve UI', 'Run 9-Point Scorecard'],
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+
+      setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
-      setError(err.message || 'Failed to get AI mentor response.');
+      setError(err.message || 'Failed to communicate with AI Mentor.');
     } finally {
-      setSending(false);
+      setChatLoading(false);
     }
   };
 
-  if (loadingTeams) {
-    return (
-      <div className="min-h-[70vh] flex items-center justify-center">
-        <LoadingSpinner label="Initializing AI Mentor session..." size="lg" />
-      </div>
-    );
-  }
+  const handleFileUploaded = (fileObj) => {
+    setAttachments((prev) => [...prev, fileObj]);
+  };
+
+  const getModeBadgeIcon = (m) => {
+    switch (m) {
+      case 'designer': return <Palette className="w-3 h-3 text-purple-400" />;
+      case 'judge': return <Trophy className="w-3 h-3 text-amber-400" />;
+      case 'startup': return <Rocket className="w-3 h-3 text-emerald-400" />;
+      default: return <Code2 className="w-3 h-3 text-cyan-400" />;
+    }
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      {/* Top Header & Team Selector */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-primary-50 text-primary-700 text-xs font-semibold rounded-md border border-primary-200 mb-2">
-            <Bot className="w-3.5 h-3.5" />
-            <span>24/7 Context-Aware Technical Assistant</span>
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 text-white">
+      {/* Background Neural Canvas */}
+      <div className="absolute top-0 right-0 w-80 h-80 opacity-20 pointer-events-none hidden lg:block">
+        <Page3DCanvas type="neural" />
+      </div>
+
+      {/* Header Banner */}
+      <div className="glass-panel p-6 sm:p-8 rounded-[28px] border border-white/15 bg-black/60 backdrop-blur-2xl shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center space-x-2 px-3.5 py-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold rounded-full">
+            <Bot className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <span>Intent-Driven AI Teammate & Tool Engine</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">AI Mentor Assistant</h1>
-          <p className="text-sm text-slate-500">
-            Ask technical architecture questions, resolve repository bugs, or inspect hackathon track rulebooks.
+          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight uppercase text-glow">
+            AI Mentor OS
+          </h1>
+          <p className="text-xs text-slate-300 max-w-2xl font-normal leading-relaxed">
+            Automatically detects natural language intent to execute Code Reviews, Debugging, UI Audits, PPT Generation, API Documentation, and Combined Super-Reports.
           </p>
         </div>
 
-        {/* Team Dropdown Selector */}
-        {teams.length > 0 ? (
-          <div className="flex flex-col text-right">
-            <label className="text-xs font-semibold text-slate-500 mb-1">Select Hackathon Team</label>
-            <select
-              value={selectedTeamId}
-              onChange={(e) => setSelectedTeamId(e.target.value)}
-              className="px-3 py-2 text-sm font-semibold border border-slate-300 rounded-xl bg-surface focus:ring-2 focus:ring-primary-500 focus:outline-none"
-            >
-              {teams.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : (
-          <Badge variant="warning">No Active Team</Badge>
-        )}
+        {/* Quick Intent Tool Execution Shortcuts */}
+        <div className="flex flex-wrap items-center gap-2 self-start md:self-center">
+          <button
+            onClick={() => handleSendMessage('Review everything and generate a complete report.')}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-purple-500 text-black font-extrabold text-xs shadow-lg hover:scale-105 transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Review Everything</span>
+          </button>
+          <button
+            onClick={() => handleSendMessage('Generate an 8-slide PPT presentation pitch deck for judges.')}
+            className="px-4 py-2 rounded-xl bg-amber-400 text-black font-extrabold text-xs shadow-lg hover:scale-105 transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap"
+          >
+            <Award className="w-3.5 h-3.5 text-black" />
+            <span>Generate PPT Deck</span>
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold rounded-xl flex items-center space-x-2">
+        <div className="p-4 bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold rounded-2xl flex items-center space-x-2">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Main Grid: Chat Feed + Rulebook Helper */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chat Feed (2 Cols) */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col h-[650px] overflow-hidden">
-          {/* Repo Link Context Bar */}
-          <div className="px-6 py-3 border-b border-slate-100 bg-surface flex items-center space-x-3">
-            <Github className="w-4 h-4 text-slate-500 flex-shrink-0" />
-            <input
-              type="url"
-              value={repoLink}
-              onChange={(e) => setRepoLink(e.target.value)}
-              placeholder="Attach GitHub Repo link for README context (optional)..."
-              className="w-full text-xs bg-transparent border-none focus:outline-none text-slate-700 placeholder-slate-400"
-            />
-          </div>
+      {/* Main Container: Chat Stream vs Sidebar Context */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Multi-Mode Selector & Chat Stream (8 cols) */}
+        <div className="lg:col-span-8 space-y-4">
+          {/* Mode Switcher */}
+          <MentorModeSelector
+            currentMode={currentMode}
+            onSelectMode={(modeId) => setCurrentMode(modeId)}
+          />
 
-          {/* Chat Messages Container */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-4">
-            {loadingHistory ? (
-              <LoadingSpinner label="Fetching chat history..." size="md" />
-            ) : messages.length === 0 ? (
-              <EmptyState
-                title="No Mentor Chat Messages Yet"
-                description={`Start the conversation with the AI Mentor for team '${teams.find(t => t.id === selectedTeamId)?.name || 'HackOps'}'.`}
-                icon={Bot}
-              />
-            ) : (
-              messages.map((msg, idx) => {
-                const isUser = msg.sender === 'user';
+          {/* Chat Window */}
+          <div className="glass-panel rounded-[28px] border border-white/15 bg-black/50 backdrop-blur-2xl flex flex-col h-[640px] shadow-2xl overflow-hidden relative">
+            {/* Chat Stream Header */}
+            <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 flex items-center justify-center font-bold">
+                  <Bot className="w-5 h-5 text-cyan-400 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-sm font-bold text-white">AI Mentor Assistant</h3>
+                    <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-[10px] font-extrabold uppercase text-cyan-300 border border-white/15 flex items-center space-x-1">
+                      {getModeBadgeIcon(currentMode)}
+                      <span className="capitalize">{currentMode} Mode</span>
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-semibold flex items-center space-x-1 mt-0.5">
+                    <span>● RAG Context Loaded</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Messages Feed Stream */}
+            <div className="flex-1 p-6 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-white/20">
+              {messages.map((msg, idx) => {
+                const isUser = msg.role === 'user';
+
                 return (
                   <div
-                    key={msg.id || idx}
+                    key={idx}
                     className={`flex items-start space-x-3 ${isUser ? 'flex-row-reverse space-x-reverse' : ''}`}
                   >
+                    {/* Avatar */}
                     <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                      className={`w-9 h-9 rounded-2xl flex items-center justify-center text-xs font-extrabold flex-shrink-0 shadow-lg ${
                         isUser
-                          ? 'bg-primary-500 text-white shadow-sm'
-                          : 'bg-emerald-500 text-white shadow-sm'
+                          ? 'bg-white text-black font-mono'
+                          : 'bg-gradient-to-br from-cyan-500/30 to-purple-600/30 border border-cyan-400/40 text-cyan-300'
                       }`}
                     >
-                      {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                      {isUser ? 'U' : <Bot className="w-5 h-5" />}
                     </div>
 
+                    {/* Message Bubble */}
                     <div
-                      className={`max-w-[80%] p-4 rounded-2xl text-sm leading-relaxed ${
+                      className={`max-w-2xl p-5 rounded-2xl space-y-3 ${
                         isUser
-                          ? 'bg-primary-500 text-white rounded-tr-none'
-                          : 'bg-surface border border-slate-200/80 text-slate-800 rounded-tl-none whitespace-pre-wrap'
+                          ? 'bg-white text-black font-medium shadow-xl'
+                          : 'glass-panel border border-white/15 bg-white/5 text-slate-200 backdrop-blur-xl shadow-2xl'
                       }`}
                     >
-                      <div className="text-[10px] font-semibold opacity-70 mb-1">
-                        {isUser ? 'You' : 'AI Mentor'} • {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
-                      </div>
-                      <div>{msg.content}</div>
+                      {/* Mode Pill Tag for Assistant */}
+                      {!isUser && (
+                        <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-b border-white/10 pb-2 mb-2">
+                          <span className="flex items-center space-x-1 text-cyan-300 font-bold uppercase tracking-wider">
+                            {getModeBadgeIcon(msg.mode || 'developer')}
+                            <span className="capitalize">{msg.mode || 'developer'} Mode</span>
+                          </span>
+                          <span>{msg.timestamp}</span>
+                        </div>
+                      )}
+
+                      {/* Content Renderer */}
+                      {isUser ? (
+                        <p className="text-xs text-black font-semibold whitespace-pre-wrap leading-relaxed">
+                          {msg.text}
+                        </p>
+                      ) : (
+                        <RichMessageRenderer
+                          content={msg.text}
+                          executedTools={msg.executedTools}
+                          pptDeck={msg.pptDeck}
+                        />
+                      )}
+
+                      {/* Attached File Indicator */}
+                      {msg.fileAttachments?.length > 0 && (
+                        <div className="pt-2 border-t border-white/10 space-y-1">
+                          <span className="text-[10px] font-mono text-slate-400">Attached File:</span>
+                          {msg.fileAttachments.map((f, fIdx) => (
+                            <div key={fIdx} className="text-xs font-mono text-cyan-300">
+                              📄 {f.name} ({f.size})
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Smart Suggestions Chips */}
+                      {!isUser && msg.suggestions && msg.suggestions.length > 0 && (
+                        <SmartSuggestions
+                          suggestions={msg.suggestions}
+                          onSelectSuggestion={(sugText) => handleSendMessage(sugText)}
+                        />
+                      )}
                     </div>
                   </div>
                 );
-              })
-            )}
+              })}
 
-            {sending && (
-              <div className="flex items-start space-x-3 animate-pulse">
-                <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs">
-                  <Bot className="w-4 h-4" />
+              {/* Typing Indicator */}
+              {chatLoading && (
+                <div className="flex items-center space-x-3">
+                  <div className="w-9 h-9 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300">
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  </div>
+                  <div className="p-4 glass-panel border border-white/15 bg-white/5 rounded-2xl text-xs text-slate-300 font-mono animate-pulse">
+                    AI Mentor is retrieving project RAG context & formulating response...
+                  </div>
                 </div>
-                <div className="p-4 rounded-2xl bg-surface border border-slate-200/80 text-xs text-slate-500 italic">
-                  AI Mentor is crafting a response based on hackathon rules & code context...
-                </div>
-              </div>
-            )}
+              )}
+              <div ref={chatEndRef} />
+            </div>
 
-            <div ref={chatBottomRef} />
-          </div>
-
-          {/* Quick Field Prompt Chips */}
-          <div className="px-6 py-2 bg-surface/50 border-t border-slate-100 flex flex-wrap gap-1.5">
-            <span className="text-[11px] font-bold text-slate-400 self-center mr-1">Suggested ({primaryField}):</span>
-            {fieldConfig.quickPrompts.map((prompt, idx) => (
+            {/* Input Bar */}
+            <form onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} className="p-4 border-t border-white/10 bg-white/5 flex items-center space-x-3">
               <button
-                key={idx}
-                onClick={() => handleSendMessage(prompt)}
-                disabled={sending || !selectedTeamId}
-                className="px-2.5 py-1 text-[11px] bg-white hover:bg-primary-50 hover:text-primary-700 text-slate-600 rounded-full border border-slate-200/80 transition-colors truncate max-w-[240px]"
+                type="button"
+                onClick={() => setFileModalOpen(true)}
+                className="p-3 rounded-xl bg-white/5 border border-white/15 hover:bg-white/15 text-slate-300 hover:text-white transition-colors"
+                title="Attach Document / File"
               >
-                💡 {prompt}
+                <Paperclip className="w-4 h-4 text-cyan-400" />
               </button>
-            ))}
-          </div>
 
-          {/* Input Form */}
-          <div className="p-4 border-t border-slate-100 bg-white">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSendMessage();
-              }}
-              className="flex items-center space-x-2"
-            >
               <input
                 type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Ask AI Mentor anything about your project build..."
-                disabled={sending || !selectedTeamId}
-                className="flex-1 px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:outline-none disabled:opacity-50"
+                value={inputQuery}
+                onChange={(e) => setInputQuery(e.target.value)}
+                placeholder={`Ask AI Mentor in ${currentMode.toUpperCase()} mode...`}
+                className="flex-1 px-4 py-3 bg-white/5 border border-white/15 text-white text-xs rounded-xl focus:border-cyan-400 focus:outline-none placeholder-slate-500"
               />
+
               <button
                 type="submit"
-                disabled={sending || !inputMessage.trim() || !selectedTeamId}
-                className="p-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl shadow-sm transition-colors disabled:opacity-50"
+                disabled={chatLoading || !inputQuery.trim()}
+                className="px-6 py-3 bg-white text-black font-extrabold text-xs rounded-xl shadow-xl transition-all flex items-center space-x-1.5 active:scale-95 disabled:opacity-50"
               >
-                <Send className="w-4 h-4" />
+                <span>Send</span>
+                <Send className="w-3.5 h-3.5 text-black" />
               </button>
             </form>
           </div>
         </div>
 
-        {/* Rulebook & Track Guidance Drawer (1 Col) */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
-            <div className="flex items-center space-x-2 border-b border-slate-100 pb-3 text-slate-900 font-bold">
-              <BookOpen className="w-5 h-5 text-primary-500" />
-              <span>Hackathon Rulebook</span>
-            </div>
+        {/* Right Column: Project Awareness Sidebar (4 cols) */}
+        <div className="lg:col-span-4 space-y-6">
+          <ProjectAwarenessCard
+            team={teams.find((t) => t.id === selectedTeamId) || {}}
+            repoUrl={repoUrl}
+            onOpenReview={() => setReviewModalOpen(true)}
+            onOpenFileUpload={() => setFileModalOpen(true)}
+            attachments={attachments}
+          />
 
-            <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
-              <div className="p-3 bg-surface rounded-xl border border-slate-200">
-                <span className="font-bold text-slate-800">Pre-existing Code Policy:</span> All submitted code must be authored during the official hackathon window. Open-source libraries and APIs are permitted.
-              </div>
+          {/* Target Repo Config */}
+          <div className="glass-panel p-6 rounded-[28px] border border-white/15 bg-black/60 backdrop-blur-2xl shadow-2xl space-y-3">
+            <h3 className="text-sm font-bold text-white flex items-center space-x-2">
+              <Github className="w-4 h-4 text-cyan-400" />
+              <span>Target Repository URL</span>
+            </h3>
+            <p className="text-xs text-slate-300 leading-relaxed font-normal">
+              Enter GitHub repository link to auto-fetch README context for AI Mentor responses.
+            </p>
 
-              <div className="p-3 bg-surface rounded-xl border border-slate-200">
-                <span className="font-bold text-slate-800">Sponsor Tracks:</span> Integrate Gemini API or Node.js microservices to qualify for extra track prizes.
-              </div>
-
-              <div className="p-3 bg-surface rounded-xl border border-slate-200">
-                <span className="font-bold text-slate-800">Submission Checklist:</span> Public GitHub link, 2-minute demo video, and clear project description are required.
-              </div>
-            </div>
+            <input
+              type="url"
+              value={repoUrl}
+              onChange={(e) => setRepoUrl(e.target.value)}
+              className="w-full px-3.5 py-2.5 bg-white/5 border border-white/15 text-white text-xs rounded-xl focus:border-cyan-400 focus:outline-none font-mono"
+              placeholder="https://github.com/user/repo"
+            />
           </div>
         </div>
       </div>
+
+      {/* 9-Metric AI Review Modal */}
+      <ProjectReviewModal
+        isOpen={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        teamId={selectedTeamId}
+        repoUrl={repoUrl}
+      />
+
+      {/* File Upload Modal */}
+      <FileUploadModal
+        isOpen={fileModalOpen}
+        onClose={() => setFileModalOpen(false)}
+        onFileUploaded={handleFileUploaded}
+      />
     </div>
   );
 }

@@ -4,7 +4,10 @@ import { StatCard } from '../components/StatCard';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Badge } from '../components/Badge';
-import { BarChart2, Users, CheckSquare, Zap, Trophy, AlertCircle, RefreshCw } from 'lucide-react';
+import { CompetitionInsights } from '../components/CompetitionInsights';
+import { HallOfFame } from '../components/HallOfFame';
+import { BarChart2, Users, CheckSquare, Zap, Trophy, AlertCircle, RefreshCw, Award, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { Page3DCanvas } from '../components/Page3DCanvas';
 
 export function EngagementPage() {
   const [dashboardData, setDashboardData] = useState([]);
@@ -46,143 +49,131 @@ export function EngagementPage() {
     }
   };
 
-  const activeTeamsCount = dashboardData.filter((t) => t.total_score > 0).length;
-  const submissionsCount = dashboardData.filter((t) => t.has_submitted).length;
-  const avgScore =
-    dashboardData.length > 0
-      ? (dashboardData.reduce((acc, t) => acc + t.total_score, 0) / dashboardData.length).toFixed(1)
-      : '0.0';
-
   if (loading) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center">
-        <LoadingSpinner label="Loading live engagement leaderboard..." size="lg" />
+        <LoadingSpinner label="Loading Live Engagement Leaderboard & Pulse..." size="lg" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 text-white">
+      {/* Decorative 3D Energy Pulsar Element */}
+      <div className="absolute top-0 right-0 w-80 h-80 opacity-25 pointer-events-none hidden lg:block">
+        <Page3DCanvas type="pulsar" />
+      </div>
+
       {/* Header */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="glass-panel p-6 sm:p-8 rounded-[28px] border border-white/15 backdrop-blur-2xl shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
-          <div className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-primary-50 text-primary-700 text-xs font-semibold rounded-md border border-primary-200 mb-2">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 text-accentCyan text-xs font-semibold rounded-full border border-white/20 mb-3">
             <BarChart2 className="w-3.5 h-3.5" />
-            <span>Staff Engagement Monitoring</span>
+            <span>Live Hackathon Operating System</span>
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Live Hackathon Engagement Dashboard</h1>
-          <p className="text-sm text-slate-500">
-            Real-time activity points weighted by check-ins (+5), mentor chat messages (+2), and submission updates (+10).
+          <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight uppercase">
+            Live Engagement <span className="text-glow text-accentCyan">Leaderboard</span>
+          </h1>
+          <p className="text-xs text-slate-300 max-w-2xl font-normal mt-1 leading-relaxed">
+            Real-time activity pulse, AI win probability models, team check-ins, and Hall of Fame champions.
           </p>
         </div>
 
         <button
           onClick={loadEngagementData}
-          className="px-4 py-2 bg-surface hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1.5 self-start md:self-center"
+          className="inline-flex items-center justify-center space-x-2 px-6 py-3.5 bg-white text-black font-extrabold text-xs rounded-xl shadow-xl hover:bg-slate-100 transition-all flex-shrink-0"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh Leaderboard</span>
+          <RefreshCw className="w-4 h-4 text-black" />
+          <span>Refresh Pulse Data</span>
         </button>
       </div>
 
       {actionMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold rounded-xl flex items-center space-x-2">
-          <Zap className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+        <div className="p-4 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold rounded-2xl flex items-center space-x-2">
+          <Zap className="w-5 h-5 text-emerald-400 flex-shrink-0" />
           <span>{actionMessage}</span>
         </div>
       )}
 
       {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-semibold rounded-xl flex items-center space-x-2">
+        <div className="p-4 bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold rounded-2xl flex items-center space-x-2">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* 4 Key Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Registered Teams" value={totalTeams} icon={Users} color="cyan" />
-        <StatCard title="Active Now" value={activeTeamsCount} icon={Zap} color="green" subtext="Teams with logged events" />
-        <StatCard title="Submissions In" value={submissionsCount} icon={CheckSquare} color="cyan" />
-        <StatCard title="Avg Engagement" value={`${avgScore} pts`} icon={BarChart2} color="green" />
-      </div>
+      {/* NEW SECTION 1: Live Competition Insights & AI Predictions */}
+      <CompetitionInsights />
 
-      {/* Leaderboard Table */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900 flex items-center space-x-2">
-            <Trophy className="w-5 h-5 text-amber-500" />
-            <span>Hackathon Leaderboard</span>
-          </h2>
-          <span className="text-xs text-slate-400 font-medium">Sorted by Total Weighted Points</span>
+      {/* NEW SECTION 2: Hall of Fame Champions */}
+      <HallOfFame />
+
+      {/* SECTION 3: Live Realtime Team Standings Table */}
+      <div className="glass-panel p-6 sm:p-8 rounded-[28px] border border-white/15 backdrop-blur-2xl shadow-2xl space-y-6">
+        <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div>
+            <h2 className="text-xl font-black text-white uppercase tracking-tight">Realtime Team Standings</h2>
+            <p className="text-xs text-slate-400 font-normal">Sorted by live composite weighted score</p>
+          </div>
+          <span className="px-3 py-1 bg-white/10 border border-white/20 text-accentCyan text-xs font-bold rounded-full">
+            {dashboardData.length} Teams Ranked
+          </span>
         </div>
 
         {dashboardData.length === 0 ? (
-          <div className="p-8">
-            <EmptyState
-              title="No Teams Active Yet"
-              description="Zero teams found. Teams will automatically rank here as they perform check-ins, mentor messages, and submissions."
-              icon={BarChart2}
-            />
-          </div>
+          <EmptyState
+            title="No Teams Active Yet"
+            description="Teams will automatically rank here as they perform check-ins, mentor messages, and submissions."
+            icon={BarChart2}
+          />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-surface text-slate-500 font-semibold text-xs border-b border-slate-100">
-                <tr>
-                  <th className="px-6 py-3">Rank</th>
-                  <th className="px-6 py-3">Team Name</th>
-                  <th className="px-6 py-3">Check-Ins</th>
-                  <th className="px-6 py-3">Chat Activity</th>
-                  <th className="px-6 py-3">Submission</th>
-                  <th className="px-6 py-3 text-right">Total Score</th>
-                  <th className="px-6 py-3 text-center">Action</th>
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-white/10 text-slate-400 font-bold uppercase text-[10px] tracking-wider">
+                  <th className="pb-3 px-4">Rank</th>
+                  <th className="pb-3 px-4">Trend</th>
+                  <th className="pb-3 px-4">Team Name</th>
+                  <th className="pb-3 px-4">Check-ins</th>
+                  <th className="pb-3 px-4">Chat Activity</th>
+                  <th className="pb-3 px-4">Submission Status</th>
+                  <th className="pb-3 px-4 text-right">Total Score</th>
+                  <th className="pb-3 px-4 text-center">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {dashboardData.map((team, idx) => (
-                  <tr key={team.team_id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-800">
-                      {idx === 0 ? (
-                        <span className="text-amber-500 font-extrabold flex items-center space-x-1">
-                          <span>🥇 #1</span>
+              <tbody className="divide-y divide-white/5">
+                {dashboardData.map((item, idx) => (
+                  <tr key={item.id} className="hover:bg-white/5 transition-colors group">
+                    <td className="py-4 px-4 font-black text-white">
+                      {idx === 0 ? '🥇 #1' : idx === 1 ? '🥈 #2' : idx === 2 ? '🥉 #3' : `#${idx + 1}`}
+                    </td>
+                    <td className="py-4 px-4">
+                      {idx % 2 === 0 ? (
+                        <span className="inline-flex items-center text-emerald-400 text-[10px] font-bold">
+                          <ArrowUp className="w-3 h-3 mr-0.5" /> +1
                         </span>
-                      ) : idx === 1 ? (
-                        <span className="text-slate-400 font-bold">🥈 #2</span>
-                      ) : idx === 2 ? (
-                        <span className="text-amber-700 font-bold">🥉 #3</span>
                       ) : (
-                        `#${idx + 1}`
+                        <span className="inline-flex items-center text-slate-400 text-[10px] font-bold">
+                          <Minus className="w-3 h-3 mr-0.5" /> 0
+                        </span>
                       )}
                     </td>
-
-                    <td className="px-6 py-4 font-bold text-slate-900">{team.team_name}</td>
-
-                    <td className="px-6 py-4 text-xs text-slate-600">
-                      {team.events_breakdown?.check_in || 0} check-ins
+                    <td className="py-4 px-4 font-bold text-white group-hover:text-accentCyan transition-colors">{item.name}</td>
+                    <td className="py-4 px-4 text-slate-300">{item.check_ins || 0}</td>
+                    <td className="py-4 px-4 text-slate-300">{item.chat_messages || 0}</td>
+                    <td className="py-4 px-4">
+                      {item.has_submitted ? <Badge variant="success">Submitted</Badge> : <Badge variant="warning">In Progress</Badge>}
                     </td>
-
-                    <td className="px-6 py-4 text-xs text-slate-600">
-                      {team.events_breakdown?.chat_message || 0} msgs
+                    <td className="py-4 px-4 text-right font-black text-accentCyan text-sm">
+                      {item.total_score || 0} pts
                     </td>
-
-                    <td className="px-6 py-4">
-                      <Badge variant={team.has_submitted ? 'success' : 'neutral'}>
-                        {team.submission_status || (team.has_submitted ? 'SUBMITTED' : 'NOT SUBMITTED')}
-                      </Badge>
-                    </td>
-
-                    <td className="px-6 py-4 text-right text-base font-extrabold text-secondary-600">
-                      {team.total_score} pts
-                    </td>
-
-                    <td className="px-6 py-4 text-center">
+                    <td className="py-4 px-4 text-center">
                       <button
-                        onClick={() => handleAdminCheckIn(team.team_id, team.team_name)}
-                        disabled={actionLoadingId === team.team_id}
-                        className="px-3 py-1.5 bg-secondary-50 hover:bg-secondary-100 text-secondary-700 text-xs font-semibold rounded-lg border border-secondary-200 transition-colors disabled:opacity-50"
+                        onClick={() => handleAdminCheckIn(item.id, item.name)}
+                        disabled={actionLoadingId === item.id}
+                        className="px-3.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white text-[11px] font-bold rounded-xl transition-all disabled:opacity-50"
                       >
-                        {actionLoadingId === team.team_id ? 'Recording...' : '+ Check-In'}
+                        {actionLoadingId === item.id ? 'Checking in...' : '+ Record Check-In'}
                       </button>
                     </td>
                   </tr>

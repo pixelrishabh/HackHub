@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Sparkles, Shield, UserCheck, AlertCircle, ArrowRight } from 'lucide-react';
+import { Page3DCanvas } from '../components/Page3DCanvas';
 
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [activeTab, setActiveTab] = useState('participant'); // 'participant' or 'staff'
+  const [activeTab, setActiveTab] = useState('participant');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,35 +35,40 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-surface flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="w-12 h-12 bg-primary-500 rounded-2xl flex items-center justify-center text-white mx-auto shadow-md shadow-primary-500/30">
-          <Sparkles className="w-6 h-6" />
+    <div className="relative min-h-[calc(100vh-80px)] bg-[#050505] text-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      {/* 3D Background Identity element */}
+      <div className="absolute top-10 right-10 w-96 h-96 opacity-30 pointer-events-none hidden md:block">
+        <Page3DCanvas type="prism" />
+      </div>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center relative z-10">
+        <div className="w-14 h-14 bg-white/10 border border-white/20 rounded-2xl flex items-center justify-center text-white mx-auto shadow-2xl backdrop-blur-xl">
+          <Sparkles className="w-7 h-7 text-accentCyan animate-pulse" />
         </div>
-        <h2 className="mt-4 text-2xl font-extrabold text-slate-900 tracking-tight">
-          Welcome to HackHub
+        <h2 className="mt-5 text-3xl font-black text-white tracking-tight uppercase">
+          Welcome to <span className="text-glow">HackHub</span>
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-2 text-xs text-slate-400 font-medium uppercase tracking-wider">
           Sign in to access your hackathon workspace
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-sm border border-slate-200/80 sm:rounded-2xl sm:px-10">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="glass-panel p-8 sm:p-10 rounded-[28px] border border-white/15 shadow-2xl backdrop-blur-2xl">
           {/* Tab Switcher: Participant vs Staff Path */}
-          <div className="flex border-b border-slate-200 mb-6">
+          <div className="flex border-b border-white/10 mb-6">
             <button
               onClick={() => {
                 setActiveTab('participant');
                 setError('');
               }}
-              className={`flex-1 pb-3 text-sm font-semibold text-center border-b-2 flex items-center justify-center space-x-1.5 transition-colors ${
+              className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 flex items-center justify-center space-x-2 transition-all ${
                 activeTab === 'participant'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
+                  ? 'border-white text-white font-extrabold'
+                  : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
-              <UserCheck className="w-4 h-4" />
+              <UserCheck className="w-4 h-4 text-accentCyan" />
               <span>Student / Participant</span>
             </button>
 
@@ -71,51 +77,51 @@ export function LoginPage() {
                 setActiveTab('staff');
                 setError('');
               }}
-              className={`flex-1 pb-3 text-sm font-semibold text-center border-b-2 flex items-center justify-center space-x-1.5 transition-colors ${
+              className={`flex-1 pb-3 text-xs font-bold uppercase tracking-wider text-center border-b-2 flex items-center justify-center space-x-2 transition-all ${
                 activeTab === 'staff'
-                  ? 'border-emerald-500 text-emerald-600'
-                  : 'border-transparent text-slate-400 hover:text-slate-600'
+                  ? 'border-accentCyan text-accentCyan font-extrabold'
+                  : 'border-transparent text-slate-400 hover:text-white'
               }`}
             >
-              <Shield className="w-4 h-4" />
+              <Shield className="w-4 h-4 text-accentCyan" />
               <span>Staff / Organizer</span>
             </button>
           </div>
 
           {activeTab === 'staff' && (
-            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800">
-              <span className="font-semibold">Organizer / Judge / Mentor Login:</span> Enter your authorized staff account credentials. (Staff accounts are created by event organizers).
+            <div className="mb-5 p-3.5 bg-white/5 border border-white/15 rounded-xl text-xs text-slate-300">
+              <span className="font-bold text-white">Organizer / Judge / Mentor Login:</span> Enter your authorized staff account credentials.
             </div>
           )}
 
           {error && (
-            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg flex items-start space-x-2 text-rose-700 text-xs">
+            <div className="mb-5 p-3.5 bg-rose-500/20 border border-rose-500/40 rounded-xl flex items-start space-x-2 text-rose-300 text-xs">
               <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Email Address</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none"
+                className="w-full px-4 py-3 text-sm bg-white/5 border border-white/15 text-white rounded-xl focus:border-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder-slate-500"
                 placeholder={activeTab === 'participant' ? 'student@university.edu' : 'organizer@hackhub.ai'}
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Password</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 uppercase tracking-wider">Password</label>
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 focus:outline-none"
+                className="w-full px-4 py-3 text-sm bg-white/5 border border-white/15 text-white rounded-xl focus:border-white focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder-slate-500"
                 placeholder="••••••••"
               />
             </div>
@@ -123,11 +129,7 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3 px-4 rounded-xl text-white font-semibold text-sm shadow-sm transition-colors flex items-center justify-center space-x-2 ${
-                activeTab === 'staff'
-                  ? 'bg-emerald-600 hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500'
-                  : 'bg-primary-500 hover:bg-primary-600 focus:ring-2 focus:ring-primary-500'
-              } disabled:opacity-50`}
+              className="w-full py-3.5 px-4 rounded-xl text-black font-extrabold text-sm bg-white hover:bg-slate-100 shadow-xl shadow-white/10 transition-all flex items-center justify-center space-x-2 disabled:opacity-50"
             >
               {loading ? (
                 <span>Signing in...</span>
@@ -140,9 +142,9 @@ export function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-6 text-center text-xs text-slate-500">
+          <div className="mt-6 text-center text-xs text-slate-400">
             Don't have a participant account?{' '}
-            <Link to="/register" className="font-semibold text-primary-600 hover:text-primary-700">
+            <Link to="/register" className="font-bold text-white hover:text-accentCyan underline">
               Register here
             </Link>
           </div>
@@ -151,3 +153,4 @@ export function LoginPage() {
     </div>
   );
 }
+

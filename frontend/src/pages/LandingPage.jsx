@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Sparkles,
   Users,
@@ -9,11 +10,15 @@ import {
   ShieldCheck,
   BarChart2,
   ArrowRight,
-  Shield,
+  Compass,
   Zap,
-  CheckCircle2
+  Globe,
+  Award
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { GlassCrystal3D } from '../components/GlassCrystal3D';
+import { MagneticButton } from '../components/MagneticButton';
+import { AnimatedCounter } from '../components/AnimatedCounter';
 
 export function LandingPage() {
   const { isAuthenticated } = useAuth();
@@ -57,83 +62,151 @@ export function LandingPage() {
     },
   ];
 
+  // Framer Motion Stagger Variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.14,
+        delayChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] },
+    },
+  };
+
   return (
-    <div className="bg-surface min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-28 border-b border-slate-200/60 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 bg-primary-50 text-primary-700 rounded-full border border-primary-200 text-xs font-semibold mb-6">
-            <Sparkles className="w-4 h-4 text-primary-500" />
-            <span>Autonomous AI Hackathon Management Platform</span>
-          </div>
+    <div className="relative min-h-screen bg-[#050505] text-white font-sans">
+      {/* Hero Section with Ambient Breathing Motion */}
+      <motion.section
+        className="relative z-10 min-h-[calc(100vh-80px)] flex items-center justify-center pt-10 pb-24 lg:py-28 px-4 sm:px-6 lg:px-8"
+        animate={{ scale: [1, 1.006, 1] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <div className="max-w-7xl mx-auto w-full">
+          <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            
+            {/* LEFT SIDE: Typography & Magnetic Actions */}
+            <motion.div
+              className="lg:col-span-7 text-left relative z-20"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              {/* Massive Outline Text Background Effect */}
+              <div className="absolute -top-20 -left-10 select-none pointer-events-none opacity-15 hidden sm:block">
+                <span className="text-[140px] sm:text-[180px] lg:text-[230px] font-black tracking-tighter text-outline leading-none uppercase">
+                  HACKHUB
+                </span>
+              </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight max-w-4xl mx-auto">
-            Supercharge Your Hackathon with <span className="text-primary-500">Autonomous AI</span>
-          </h1>
+              {/* Tag Badge */}
+              <motion.div variants={itemVariants} className="inline-flex items-center space-x-2.5 px-4 py-2 rounded-full glass-panel border border-white/15 text-xs font-semibold tracking-wide text-slate-200 mb-8 backdrop-blur-2xl shadow-xl">
+                <Sparkles className="w-4 h-4 text-accentCyan animate-pulse" />
+                <span className="text-glow">Next-Gen Autonomous AI Platform</span>
+              </motion.div>
 
-          <p className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto font-normal">
-            From skill-balanced team matchmaking to automated submission evaluation and similarity detection. Designed for hackathon organizers, judges, mentors, and participants.
-          </p>
+              {/* Large Title */}
+              <motion.div variants={itemVariants} className="relative mb-6">
+                <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black tracking-tighter text-white leading-none uppercase">
+                  HACK
+                  <br />
+                  <span className="text-white text-glow">HUB</span>
+                </h1>
+              </motion.div>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            {isAuthenticated ? (
-              <Link
-                to="/dashboard"
-                className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 bg-primary-500 hover:bg-primary-600 text-white text-base font-semibold rounded-xl shadow-md shadow-primary-500/20 transition-colors"
-              >
-                <span>Go to Dashboard</span>
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/register"
-                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 bg-primary-500 hover:bg-primary-600 text-white text-base font-semibold rounded-xl shadow-md shadow-primary-500/20 transition-colors"
-                >
-                  <span>Register as Student</span>
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
-                <Link
-                  to="/login"
-                  className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 px-6 py-3.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-base font-semibold rounded-xl transition-colors"
-                >
-                  <span>Log In (Student or Staff)</span>
-                </Link>
-              </>
-            )}
-          </div>
+              {/* Subtitle */}
+              <motion.p variants={itemVariants} className="text-xl sm:text-2xl lg:text-3xl font-bold text-accentCyan mb-4 tracking-tight">
+                The Future of AI-Powered Hackathons
+              </motion.p>
 
-          {/* Quick Metrics Banner */}
-          <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto text-left">
-            <div className="p-4 rounded-xl bg-surface border border-slate-200/80">
-              <div className="text-2xl font-bold text-slate-900">100%</div>
-              <div className="text-xs text-slate-500 font-medium">Real-Time Evaluation</div>
-            </div>
-            <div className="p-4 rounded-xl bg-surface border border-slate-200/80">
-              <div className="text-2xl font-bold text-secondary-600">AI Powered</div>
-              <div className="text-xs text-slate-500 font-medium">Gemini 3.6 Engine</div>
-            </div>
-            <div className="p-4 rounded-xl bg-surface border border-slate-200/80">
-              <div className="text-2xl font-bold text-slate-900">Role-Guarded</div>
-              <div className="text-xs text-slate-500 font-medium">Strict Access Control</div>
-            </div>
-            <div className="p-4 rounded-xl bg-surface border border-slate-200/80">
-              <div className="text-2xl font-bold text-primary-600">Field-Themed</div>
-              <div className="text-xs text-slate-500 font-medium">Personalized Track UI</div>
-            </div>
+              {/* Description */}
+              <motion.p variants={itemVariants} className="text-base sm:text-lg text-slate-300 max-w-xl leading-relaxed mb-10 font-normal">
+                <span className="font-semibold text-white">Build. Collaborate. Innovate. Win.</span>
+                <br />
+                One intelligent platform connecting students, mentors, organizers and judges.
+              </motion.p>
+
+              {/* Magnetic Action CTA Buttons */}
+              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-5">
+                {isAuthenticated ? (
+                  <Link to="/dashboard">
+                    <MagneticButton primary className="shimmer-effect">
+                      <span>Launch HackHub</span>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </MagneticButton>
+                  </Link>
+                ) : (
+                  <>
+                    <Link to="/register">
+                      <MagneticButton primary className="shimmer-effect">
+                        <span>Launch HackHub</span>
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      </MagneticButton>
+                    </Link>
+                    <Link to="/login">
+                      <MagneticButton>
+                        <Compass className="w-5 h-5 text-accentCyan group-hover:rotate-45 transition-transform" />
+                        <span>Explore Events</span>
+                      </MagneticButton>
+                    </Link>
+                  </>
+                )}
+              </motion.div>
+
+              {/* Quick Metrics Banner with Animated Count-Up */}
+              <motion.div variants={itemVariants} className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl">
+                <div className="p-4 rounded-2xl glass-panel border border-white/10 glass-panel-hover">
+                  <div className="text-2xl font-black text-white">
+                    <AnimatedCounter value="100" suffix="%" />
+                  </div>
+                  <div className="text-[11px] text-slate-400 font-medium">Real-Time AI</div>
+                </div>
+                <div className="p-4 rounded-2xl glass-panel border border-white/10 glass-panel-hover">
+                  <div className="text-2xl font-black text-accentCyan">Gemini 3.6</div>
+                  <div className="text-[11px] text-slate-400 font-medium">AI Engine</div>
+                </div>
+                <div className="p-4 rounded-2xl glass-panel border border-white/10 glass-panel-hover">
+                  <div className="text-2xl font-black text-white">Role-Guarded</div>
+                  <div className="text-[11px] text-slate-400 font-medium">Access Control</div>
+                </div>
+                <div className="p-4 rounded-2xl glass-panel border border-white/10 glass-panel-hover">
+                  <div className="text-2xl font-black text-glow">Track UI</div>
+                  <div className="text-[11px] text-slate-400 font-medium">Field-Themed</div>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* RIGHT SIDE: Floating 3D Glass Crystal & Neural Orbit */}
+            <motion.div
+              className="lg:col-span-5 relative flex items-center justify-center"
+              initial={{ opacity: 0, scale: 0.88 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+            >
+              <GlassCrystal3D />
+            </motion.div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Features Grid Section */}
-      <section className="py-16 md:py-24 bg-surface">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">
-              Complete Hackathon Operating System
+      <section className="relative z-10 py-28 px-4 sm:px-6 lg:px-8 bg-black/70 backdrop-blur-xl border-t border-white/10">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center max-w-3xl mx-auto mb-20">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white uppercase">
+              Complete Hackathon <span className="text-glow text-accentCyan">OS</span>
             </h2>
-            <p className="mt-3 text-slate-600 text-base">
-              Every feature connects directly to real Express + Prisma backend services for a seamless hackathon workflow.
+            <p className="mt-4 text-slate-400 text-base sm:text-lg font-normal">
+              Autonomous AI workflows powered by Express, Prisma & Gemini 3.6 model integrations.
             </p>
           </div>
 
@@ -141,23 +214,31 @@ export function LandingPage() {
             {features.map((item, idx) => {
               const Icon = item.icon;
               return (
-                <div
+                <motion.div
                   key={idx}
-                  className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col justify-between"
+                  initial={{ opacity: 0, y: 35 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.7, delay: idx * 0.1 }}
+                  className="glass-panel glass-panel-hover p-8 rounded-[24px] border border-white/12 flex flex-col justify-between group"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-primary-50 text-primary-600 flex items-center justify-center">
-                        <Icon className="w-6 h-6" />
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 text-white flex items-center justify-center group-hover:scale-110 group-hover:border-white/40 transition-all duration-300 shadow-xl">
+                        <Icon className="w-7 h-7 text-accentCyan group-hover:rotate-6 transition-transform" />
                       </div>
-                      <span className="px-2.5 py-1 bg-secondary-50 text-secondary-700 text-xs font-semibold rounded-md border border-secondary-200">
+                      <span className="px-3.5 py-1 bg-white/5 border border-white/15 text-accentCyan text-xs font-semibold rounded-full backdrop-blur-md">
                         {item.badge}
                       </span>
                     </div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">{item.description}</p>
+                    <h3 className="text-xl font-bold text-white mb-3 group-hover:text-accentCyan transition-colors">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-slate-300 leading-relaxed font-normal">
+                      {item.description}
+                    </p>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -165,9 +246,14 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-8 text-center text-xs text-slate-500">
-        <div className="max-w-7xl mx-auto px-4">
-          <p>© 2026 HackHub — Powered by Express, Prisma & Gemini AI Engine.</p>
+      <footer className="relative z-10 bg-[#050505] border-t border-white/10 py-12 text-center text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-2">
+            <span className="font-extrabold text-white tracking-widest text-sm">HACKHUB</span>
+            <span className="text-slate-600">|</span>
+            <span className="text-slate-400">Futuristic AI Hackathon Engine</span>
+          </div>
+          <p>© 2026 HackHub. Designed for Organizers, Judges & Builders.</p>
         </div>
       </footer>
     </div>
