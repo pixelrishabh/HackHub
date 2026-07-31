@@ -251,21 +251,21 @@ while (
 
   const explanation = generateTeamExplanation(team);
 
-teams.push({
+  teams.push({
     name: `Team Synergy ${teamNumber++}`,
-    member_ids,
+    member_ids: memberIds,
 
     compatibility_score: 90 + Math.floor(Math.random() * 8),
 
     score_breakdown: {
-        skills: 36,
-        interests: 27,
-        experience: 18,
-        diversity: 10,
+      skills: 36,
+      interests: 27,
+      experience: 18,
+      diversity: 10,
     },
 
-    rationale,
-});
+    rationale: explanation || 'AI-formed balanced team.',
+  });
 }
 // Merge last single-member team into previous team
 if (teams.length > 1 && teams[teams.length - 1].member_ids.length === 1) {
