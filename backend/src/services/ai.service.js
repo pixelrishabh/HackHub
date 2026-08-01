@@ -41,12 +41,77 @@ function safeParseJSON(rawText) {
 }
 
 /**
- * Invoke Gemini API (or Anthropic API if key is present) with strict prompt.
+ * Call Groq API endpoint if GROQ_API_KEY is configured.
+ */
+async function callGroqLLM(prompt, systemInstruction = '') {
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!groqKey || groqKey === 'your_groq_api_key_here') return null;
+
+  const candidateModels = [
+    'llama-3.3-70b-versatile',
+    'llama-3.1-8b-instant',
+    'mixtral-8x7b-32768',
+    'gemma2-9b-it',
+  ];
+
+  const promptText = typeof prompt === 'string' ? prompt : JSON.stringify(prompt);
+  const sysText = typeof systemInstruction === 'string' ? systemInstruction : JSON.stringify(systemInstruction);
+
+  for (const model of candidateModels) {
+    try {
+      const messages = [];
+      if (sysText) {
+        messages.push({ role: 'system', content: sysText });
+      }
+      messages.push({ role: 'user', content: promptText });
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${groqKey.trim()}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 1024,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          console.log(`[AIService] Successfully received response from Groq API (${model})`);
+          return content;
+        }
+      } else {
+        const errBody = await response.text();
+        console.warn(`[AIService] Groq API returned ${response.status} for model '${model}':`, errBody.substring(0, 150));
+      }
+    } catch (err) {
+      console.warn(`[AIService] Groq API call error for model '${model}':`, err.message);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Invoke Groq API (or Gemini API) with strict prompt.
  * @param {string} prompt 
  * @param {string} systemInstruction 
  * @returns {Promise<string>}
  */
 async function callLLM(prompt, systemInstruction = '') {
+  // 1. Try Groq API first if GROQ_API_KEY is configured
+  const groqResult = await callGroqLLM(prompt, systemInstruction);
+  if (groqResult) {
+    return groqResult;
+  }
+
+  // 2. Fallback to Gemini API if GEMINI_API_KEY is present
   const geminiKey = process.env.GEMINI_API_KEY;
 
   if (geminiKey && geminiKey !== 'your_gemini_api_key_here') {
@@ -99,7 +164,7 @@ async function callLLM(prompt, systemInstruction = '') {
   }
 
   // If no API key is set, throw to trigger intelligent deterministic fallback
-  throw new Error('No valid LLM API key configured (GEMINI_API_KEY)');
+  throw new Error('No valid LLM API key configured (GROQ_API_KEY / GEMINI_API_KEY)');
 }
 
 /**
