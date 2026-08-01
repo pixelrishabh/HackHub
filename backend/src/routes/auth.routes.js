@@ -6,7 +6,7 @@ const { authenticate, authorize } = require('../middleware/auth.middleware');
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10,
+  max: 150,
   message: { error: 'Too many authentication attempts. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
