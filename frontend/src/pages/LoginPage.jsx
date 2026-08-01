@@ -88,6 +88,51 @@ export function LoginPage() {
             </button>
           </div>
 
+          {/* Quick Demo Sign In Buttons for Judges */}
+          <div className="mb-6 p-4 bg-white/5 border border-white/15 rounded-2xl">
+            <div className="text-[11px] font-extrabold uppercase tracking-wider text-accentCyan mb-2.5 flex items-center justify-between">
+              <span>⚡ Quick Demo Sign In</span>
+              <span className="text-[10px] text-slate-400 font-medium">Pass: Demo@2026!</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => { setEmail('demo.participant@hackhub.ai'); setPassword('Demo@2026!'); setActiveTab('participant'); }}
+                className="px-2.5 py-2 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-[11px] font-bold text-white transition-all text-left flex items-center space-x-1.5"
+              >
+                <span>👤 Participant</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('demo.mentor@hackhub.ai'); setPassword('Demo@2026!'); setActiveTab('staff'); }}
+                className="px-2.5 py-2 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-[11px] font-bold text-white transition-all text-left flex items-center space-x-1.5"
+              >
+                <span>🎓 Mentor</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('demo.judge@hackhub.ai'); setPassword('Demo@2026!'); setActiveTab('staff'); }}
+                className="px-2.5 py-2 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-[11px] font-bold text-white transition-all text-left flex items-center space-x-1.5"
+              >
+                <span>⚖️ Judge</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('demo.organizer@hackhub.ai'); setPassword('Demo@2026!'); setActiveTab('staff'); }}
+                className="px-2.5 py-2 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-[11px] font-bold text-white transition-all text-left flex items-center space-x-1.5"
+              >
+                <span>👑 Organizer</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEmail('demo.sponsor@hackhub.ai'); setPassword('Demo@2026!'); setActiveTab('staff'); }}
+                className="px-2.5 py-2 bg-white/10 hover:bg-white/20 border border-white/15 rounded-xl text-[11px] font-bold text-white transition-all text-left flex items-center space-x-1.5 col-span-2 sm:col-span-1"
+              >
+                <span>💼 Sponsor</span>
+              </button>
+            </div>
+          </div>
+
           {activeTab === 'staff' && (
             <div className="mb-5 p-3.5 bg-white/5 border border-white/15 rounded-xl text-xs text-slate-300">
               <span className="font-bold text-white">Organizer / Judge / Mentor Login:</span> Enter your authorized staff account credentials.

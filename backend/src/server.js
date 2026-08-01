@@ -85,8 +85,9 @@ const prisma = require('./config/db');
 async function autoSeedIfEmpty() {
   try {
     const userCount = await prisma.user.count();
-    if (userCount === 0) {
-      console.log('🌱 Empty database detected. Auto-seeding default demo accounts...');
+    const hasDemoUser = await prisma.user.findFirst({ where: { email: 'demo.participant@hackhub.ai' } });
+    if (userCount === 0 || !hasDemoUser) {
+      console.log('🌱 Reseeding database with official 5 demo accounts...');
       const seedFn = require('./scripts/seed');
       if (typeof seedFn === 'function') {
         await seedFn();
