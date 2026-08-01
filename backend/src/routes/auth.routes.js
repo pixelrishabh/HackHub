@@ -6,7 +6,11 @@ const { authenticate, authorize } = require('../middleware/auth.middleware');
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 150,
+  max: 1000,
+  skip: (req) => {
+    const email = String(req.body?.email || '').toLowerCase();
+    return email.includes('demo') || email.includes('@hackhub.ai') || email.includes('@hackops.test');
+  },
   message: { error: 'Too many authentication attempts. Please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
