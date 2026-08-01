@@ -52,7 +52,7 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'online',
     platform: 'HackHub Backend',
-    version: '1.0.1-demofast',
+    version: '1.0.2-nolimit',
     timestamp: new Date().toISOString(),
   });
 });
