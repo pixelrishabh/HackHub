@@ -18,6 +18,9 @@ const sponsorRoutes = require('./routes/sponsor.routes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Enable reverse proxy support for Render/Vercel
+app.set('trust proxy', 1);
+
 // Security HTTP Headers
 app.use(helmet());
 
