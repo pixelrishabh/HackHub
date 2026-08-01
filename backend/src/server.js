@@ -24,22 +24,9 @@ app.set('trust proxy', 1);
 // Security HTTP Headers
 app.use(helmet());
 
-// Explicit CORS Allow-List
-const rawOrigins = process.env.ALLOWED_ORIGIN || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:5000,http://127.0.0.1:5500,http://localhost:8080,http://127.0.0.1:8080';
-const allowedOrigins = rawOrigins.split(',').map(o => o.trim());
-
+// Universal CORS Support for Frontend & Vercel Deployments
 app.use(cors({
-  origin: (origin, callback) => {
-    if (
-      !origin ||
-      allowedOrigins.includes('*') ||
-      allowedOrigins.includes(origin) ||
-      origin.endsWith('.vercel.app')
-    ) {
-      return callback(null, true);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,

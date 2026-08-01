@@ -3,9 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -60,6 +59,7 @@ model Team {
   description          String            @default("")
   logo_url             String            @default("")
   category             String            @default("General")
+  primary_field        String            @default("AI/ML")
   max_members          Int               @default(4)
   required_skills      String            @default("[]") // JSON string array
   tech_stack           String            @default("[]") // JSON string array
