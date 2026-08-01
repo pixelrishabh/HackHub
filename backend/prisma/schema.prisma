@@ -34,22 +34,38 @@ model Notification {
 }
 
 model Profile {
-  id                String    @id @default(uuid())
-  user_id           String    @unique
-  user              User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  avatar_url        String    @default("")
-  skills            String    @default("[]") // JSON string array
-  experience_level  String    @default("Intermediate")
-  interests         String    @default("[]") // JSON string array
-  timezone          String    @default("UTC")
-  project_goal_text String    @default("")
-  last_check_in_at  DateTime?
-  check_in_count    Int       @default(0)
-  check_in_streak   Int       @default(0)
-  badges            String    @default("[]") // JSON string array
-  preferred_language String   @default("en")
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id                 String    @id @default(uuid())
+  user_id            String    @unique
+  user               User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  avatar_url         String    @default("")
+  username           String    @default("")
+  bio                String    @default("")
+  banner             String    @default("")
+  location           String    @default("")
+  university         String    @default("")
+  degree             String    @default("")
+  branch             String    @default("")
+  graduationYear     String    @default("")
+  experience_level   String    @default("Intermediate")
+  project_goal_text  String    @default("")
+  timezone           String    @default("UTC")
+  githubUrl          String    @default("")
+  linkedinUrl        String    @default("")
+  twitterUrl         String    @default("")
+  portfolioUrl       String    @default("")
+  websiteUrl         String    @default("")
+  theme              String    @default("deep-black-diamond")
+  accentColor        String    @default("#00E5FF")
+  skills             String    @default("[]") // JSON string array
+  interests          String    @default("[]") // JSON string array
+  techStack          String    @default("[]") // JSON string array
+  last_check_in_at   DateTime?
+  check_in_count     Int       @default(0)
+  check_in_streak    Int       @default(0)
+  badges             String    @default("[]") // JSON string array
+  preferred_language String    @default("en")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 }
 
 model Team {

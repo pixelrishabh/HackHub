@@ -387,23 +387,47 @@ async function checkInUser(req, res) {
 async function updateProfile(req, res) {
   try {
     const userId = req.user.id;
-    const { name, avatar_url, skills, experience_level, interests, timezone, project_goal_text, preferred_language } = req.body;
+    const body = req.body || {};
 
-    if (name) {
+    if (body.name) {
       await prisma.user.update({
         where: { id: userId },
-        data: { name },
+        data: { name: body.name },
       });
     }
 
     const updateData = {};
-    if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
-    if (skills !== undefined) updateData.skills = Array.isArray(skills) ? JSON.stringify(skills) : skills;
-    if (experience_level !== undefined) updateData.experience_level = experience_level;
-    if (interests !== undefined) updateData.interests = Array.isArray(interests) ? JSON.stringify(interests) : interests;
-    if (timezone !== undefined) updateData.timezone = timezone;
-    if (project_goal_text !== undefined) updateData.project_goal_text = project_goal_text;
-    if (preferred_language !== undefined) updateData.preferred_language = preferred_language;
+    const avatarValue = body.avatar_url || body.avatar;
+    if (avatarValue !== undefined) updateData.avatar_url = avatarValue;
+    if (body.username !== undefined) updateData.username = body.username;
+    if (body.bio !== undefined) updateData.bio = body.bio;
+    if (body.banner !== undefined) updateData.banner = body.banner;
+    if (body.location !== undefined) updateData.location = body.location;
+    if (body.university !== undefined) updateData.university = body.university;
+    if (body.degree !== undefined) updateData.degree = body.degree;
+    if (body.branch !== undefined) updateData.branch = body.branch;
+    if (body.graduationYear !== undefined) updateData.graduationYear = body.graduationYear;
+    if (body.experience_level !== undefined) updateData.experience_level = body.experience_level;
+    if (body.project_goal_text !== undefined) updateData.project_goal_text = body.project_goal_text;
+    if (body.timezone !== undefined) updateData.timezone = body.timezone;
+    if (body.githubUrl !== undefined) updateData.githubUrl = body.githubUrl;
+    if (body.linkedinUrl !== undefined) updateData.linkedinUrl = body.linkedinUrl;
+    if (body.twitterUrl !== undefined) updateData.twitterUrl = body.twitterUrl;
+    if (body.portfolioUrl !== undefined) updateData.portfolioUrl = body.portfolioUrl;
+    if (body.websiteUrl !== undefined) updateData.websiteUrl = body.websiteUrl;
+    if (body.theme !== undefined) updateData.theme = body.theme;
+    if (body.accentColor !== undefined) updateData.accentColor = body.accentColor;
+    if (body.preferred_language !== undefined) updateData.preferred_language = body.preferred_language;
+
+    if (body.skills !== undefined) {
+      updateData.skills = Array.isArray(body.skills) ? JSON.stringify(body.skills) : body.skills;
+    }
+    if (body.interests !== undefined) {
+      updateData.interests = Array.isArray(body.interests) ? JSON.stringify(body.interests) : body.interests;
+    }
+    if (body.techStack !== undefined) {
+      updateData.techStack = Array.isArray(body.techStack) ? JSON.stringify(body.techStack) : body.techStack;
+    }
 
     const profile = await prisma.profile.upsert({
       where: { user_id: userId },
@@ -424,6 +448,7 @@ async function updateProfile(req, res) {
     return res.status(200).json({
       message: 'Profile updated successfully',
       user: safeUser,
+      profile,
     });
   } catch (error) {
     console.error('[AuthController] updateProfile Error:', error);
