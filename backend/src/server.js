@@ -80,12 +80,30 @@ app.use((req, res) => {
   res.status(404).json({ error: `Cannot ${req.method} ${req.originalUrl}` });
 });
 
+const prisma = require('./config/db');
+
+async function autoSeedIfEmpty() {
+  try {
+    const userCount = await prisma.user.count();
+    if (userCount === 0) {
+      console.log('🌱 Empty database detected. Auto-seeding default demo accounts...');
+      const seedFn = require('./scripts/seed');
+      if (typeof seedFn === 'function') {
+        await seedFn();
+      }
+    }
+  } catch (err) {
+    console.error('[AutoSeed] Error during initial database check:', err.message);
+  }
+}
+
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  app.listen(PORT, async () => {
     console.log(`==================================================`);
     console.log(`🚀 HackHub Backend running on port ${PORT}`);
     console.log(`📡 Healthcheck: http://localhost:${PORT}/api/health`);
     console.log(`==================================================`);
+    await autoSeedIfEmpty();
   });
 }
 

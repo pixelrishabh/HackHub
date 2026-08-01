@@ -4,10 +4,11 @@
   "description": "AI-powered hackathon management platform backend",
   "main": "src/server.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "npx prisma db push --accept-data-loss && node src/server.js",
+    "build": "npx prisma generate && npx prisma db push --accept-data-loss",
     "dev": "node --watch src/server.js",
     "prisma:generate": "npx prisma generate",
-    "prisma:push": "npx prisma db push",
+    "prisma:push": "npx prisma db push --accept-data-loss",
     "postinstall": "prisma generate",
     "seed": "node src/scripts/seed.js",
     "test": "node src/scripts/test_all_features.js"
