@@ -146,12 +146,28 @@ async function login(req, res) {
       return res.status(400).json({ error: 'Email and password are required.' });
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase();
+    let normalizedEmail = String(email).trim().toLowerCase();
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { email: normalizedEmail },
       include: { profile: true },
     });
+
+    // Domain alias fallback for demo/seed accounts (@hackhub.ai, @hackops.ai, @hackops.test)
+    if (!user && normalizedEmail.includes('@')) {
+      const emailUsername = normalizedEmail.split('@')[0];
+      const domainAliases = ['@hackops.test', '@hackops.ai', '@hackhub.ai', '@hackhub.test'];
+      for (const domain of domainAliases) {
+        const altEmail = `${emailUsername}${domain}`;
+        if (altEmail !== normalizedEmail) {
+          user = await prisma.user.findUnique({
+            where: { email: altEmail },
+            include: { profile: true },
+          });
+          if (user) break;
+        }
+      }
+    }
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials.' });
