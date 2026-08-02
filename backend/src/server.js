@@ -79,9 +79,39 @@ app.use((err, req, res, next) => {
   });
 });
 
+const User = require('./models/User');
+const Profile = require('./models/Profile');
+const bcrypt = require('bcryptjs');
+
+async function autoSeedIfEmpty() {
+  try {
+    const count = await User.countDocuments();
+    if (count === 0) {
+      console.log('🌱 Database empty. Auto-seeding 5 official demo accounts...');
+      const hashedPassword = await bcrypt.hash('Demo@2026!', 10);
+      const demoAccounts = [
+        { role: 'participant', name: 'Alex Mercer (Demo Participant)', email: 'demo.participant@hackhub.ai' },
+        { role: 'mentor', name: 'Marcus Vance (Demo Mentor)', email: 'demo.mentor@hackhub.ai' },
+        { role: 'judge', name: 'Dr. Sarah Chen (Demo Judge)', email: 'demo.judge@hackhub.ai' },
+        { role: 'organizer', name: 'Alex Rivera (Demo Organizer)', email: 'demo.organizer@hackhub.ai' },
+        { role: 'sponsor', name: 'Elena Rostova (Demo Sponsor)', email: 'demo.sponsor@hackhub.ai' },
+      ];
+
+      for (const acc of demoAccounts) {
+        const u = await User.create({ name: acc.name, email: acc.email, password: hashedPassword, role: acc.role });
+        await Profile.create({ userId: u._id, username: acc.email.split('@')[0] });
+      }
+      console.log('✅ Auto-seeded 5 official demo accounts successfully.');
+    }
+  } catch (e) {
+    console.warn('[AutoSeed] Non-critical warning:', e.message);
+  }
+}
+
 // Start Server
 async function startServer() {
   await connectDB();
+  await autoSeedIfEmpty();
   app.listen(PORT, () => {
     console.log('==================================================');
     console.log(`🚀 HackHub AI Backend (MERN) running on port ${PORT}`);
