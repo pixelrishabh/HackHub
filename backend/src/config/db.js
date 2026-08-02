@@ -1,4 +1,12 @@
 const mongoose = require('mongoose');
+const dns = require('dns');
+
+// Automatically set reliable public DNS for Node.js SRV resolution on Windows
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+} catch (e) {
+  // Ignore if custom DNS assignment is restricted by environment
+}
 
 async function connectDB() {
   const mongoUri = process.env.MONGODB_URI;
@@ -16,21 +24,19 @@ async function connectDB() {
 
   try {
     const conn = await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 8000,
     });
-    console.log(`🍃 MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`);
+    console.log(`🍃 MongoDB Atlas Connected Successfully: ${conn.connection.host}/${conn.connection.name}`);
     return conn;
   } catch (error) {
-    console.warn(`⚠️ MongoDB direct connection warning (${error.message}). Checking local fallback...`);
+    console.warn(`⚠️ MongoDB Atlas Connection Error (${error.message}). Checking local fallback...`);
     try {
-      // In-memory or fallback connection
       const fallbackUri = 'mongodb://127.0.0.1:27017/hackhub';
       const conn = await mongoose.connect(fallbackUri, { serverSelectionTimeoutMS: 3000 });
       console.log(`🍃 MongoDB Connected to local fallback: ${conn.connection.host}`);
       return conn;
     } catch (e) {
-      console.error('❌ MongoDB Connection Error:', error.message);
-      // For local testing without active MongoDB service, allow server to run with mock database handler
+      console.error('❌ Local MongoDB Fallback Connection Error:', e.message);
       return null;
     }
   }
