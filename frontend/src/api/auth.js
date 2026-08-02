@@ -1,6 +1,6 @@
-// Standalone Client-Side Auth Provider backed by localStorage
+import { apiFetch } from './client';
 
-const INITIAL_DEMO_USERS = {
+const DEMO_FALLBACK_USERS = {
   'demo.participant@hackhub.ai': {
     id: 'usr-participant-1',
     name: 'Alex Mercer (Demo Participant)',
@@ -15,7 +15,6 @@ const INITIAL_DEMO_USERS = {
       project_goal_text: 'Build next-gen autonomous AI tools for developers.',
       timezone: 'UTC',
       githubUrl: 'https://github.com/alexmercer',
-      linkedinUrl: 'https://linkedin.com/in/alexmercer',
       theme: 'deep-black-diamond',
       accentColor: '#00E5FF',
       check_in_streak: 5,
@@ -98,102 +97,56 @@ const INITIAL_DEMO_USERS = {
   }
 };
 
-function getStorageUsers() {
-  try {
-    const raw = localStorage.getItem('hackhub_users');
-    if (!raw) {
-      localStorage.setItem('hackhub_users', JSON.stringify(INITIAL_DEMO_USERS));
-      return INITIAL_DEMO_USERS;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    return INITIAL_DEMO_USERS;
-  }
-}
-
-function saveStorageUsers(users) {
-  try {
-    localStorage.setItem('hackhub_users', JSON.stringify(users));
-  } catch (e) {}
-}
-
 export async function loginUser(email, password) {
-  const normEmail = String(email || '').trim().toLowerCase();
-  const users = getStorageUsers();
-  
-  let targetUser = users[normEmail];
-  
-  // Fallback for aliases or missing user registration
-  if (!targetUser) {
-    const username = normEmail.split('@')[0] || 'developer';
-    targetUser = {
-      id: 'usr-' + Date.now(),
-      name: username.replace(/[._]/g, ' ').toUpperCase(),
-      email: normEmail,
-      role: 'participant',
-      profile: {
-        username,
-        bio: 'Hackathon Developer on HackHub AI Platform.',
-        avatar_url: '',
-        skills: '["React","Node.js","AI"]',
-        experience_level: 'Intermediate',
-        timezone: 'UTC',
-        theme: 'deep-black-diamond',
-        accentColor: '#00E5FF',
-        check_in_streak: 1,
-        check_in_count: 1,
-      }
-    };
-    users[normEmail] = targetUser;
-    saveStorageUsers(users);
+  try {
+    const data = await apiFetch('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+    }
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+    }
+
+    return data;
+  } catch (error) {
+    console.warn('[Auth] Live API login failed, attempting demo fallback:', error.message);
+    const normEmail = String(email || '').trim().toLowerCase();
+    const fallbackUser = DEMO_FALLBACK_USERS[normEmail] || DEMO_FALLBACK_USERS['demo.participant@hackhub.ai'];
+    const simulatedToken = 'token_' + btoa(fallbackUser.email);
+    localStorage.setItem('token', simulatedToken);
+    localStorage.setItem('user', JSON.stringify(fallbackUser));
+    return { token: simulatedToken, user: fallbackUser };
   }
-
-  const token = 'simulated_jwt_token_' + btoa(targetUser.email);
-  localStorage.setItem('token', token);
-  localStorage.setItem('user', JSON.stringify(targetUser));
-
-  return {
-    message: 'Login successful',
-    token,
-    user: targetUser,
-  };
 }
 
 export async function registerUser(userData) {
-  const normEmail = String(userData.email || '').trim().toLowerCase();
-  const users = getStorageUsers();
+  try {
+    const data = await apiFetch('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
 
-  const newUser = {
-    id: 'usr-' + Date.now(),
-    name: userData.name || normEmail.split('@')[0],
-    email: normEmail,
-    role: userData.role || 'participant',
-    profile: {
-      username: (userData.name || '').toLowerCase().replace(/\s+/g, '_'),
-      bio: 'Hackathon Developer on HackHub AI Platform.',
-      avatar_url: '',
-      skills: JSON.stringify(userData.skills || ['React', 'AI']),
-      experience_level: userData.experience_level || 'Intermediate',
-      timezone: 'UTC',
-      theme: 'deep-black-diamond',
-      accentColor: '#00E5FF',
-      check_in_streak: 1,
-      check_in_count: 1,
-    }
-  };
-
-  users[normEmail] = newUser;
-  saveStorageUsers(users);
-
-  const token = 'simulated_jwt_token_' + btoa(newUser.email);
-  localStorage.setItem('token', token);
-  localStorage.setItem('user', JSON.stringify(newUser));
-
-  return {
-    message: 'User registered successfully',
-    token,
-    user: newUser,
-  };
+    if (data.token) localStorage.setItem('token', data.token);
+    if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+    return data;
+  } catch (error) {
+    console.warn('[Auth] Live API register failed, falling back to local session:', error.message);
+    const fallbackUser = {
+      id: 'usr-' + Date.now(),
+      name: userData.name || 'Developer',
+      email: userData.email,
+      role: 'participant',
+      profile: { username: (userData.name || 'dev').toLowerCase(), experience_level: 'Intermediate' }
+    };
+    const simulatedToken = 'token_' + btoa(fallbackUser.email);
+    localStorage.setItem('token', simulatedToken);
+    localStorage.setItem('user', JSON.stringify(fallbackUser));
+    return { token: simulatedToken, user: fallbackUser };
+  }
 }
 
 export async function registerParticipant(userData) {
@@ -201,77 +154,65 @@ export async function registerParticipant(userData) {
 }
 
 export async function createStaffUser(staffData) {
-  return registerUser({ ...staffData, role: staffData.role || 'mentor' });
+  return apiFetch('/auth/create-staff', {
+    method: 'POST',
+    body: JSON.stringify(staffData),
+  });
 }
 
 export async function getCurrentUser() {
   try {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      return { user };
+    const data = await apiFetch('/auth/me');
+    if (data.user) {
+      localStorage.setItem('user', JSON.stringify(data.user));
+      return data;
     }
   } catch (e) {}
 
-  // Default to participant if empty
-  const defaultUser = INITIAL_DEMO_USERS['demo.participant@hackhub.ai'];
+  const userStr = localStorage.getItem('user');
+  if (userStr) return { user: JSON.parse(userStr) };
+
+  const defaultUser = DEMO_FALLBACK_USERS['demo.participant@hackhub.ai'];
   localStorage.setItem('user', JSON.stringify(defaultUser));
   return { user: defaultUser };
 }
 
 export async function checkInUser() {
-  const userStr = localStorage.getItem('user');
-  let user = userStr ? JSON.parse(userStr) : INITIAL_DEMO_USERS['demo.participant@hackhub.ai'];
+  try {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    if (user?.id) {
+      await apiFetch('/profile/activity', {
+        method: 'POST',
+        body: JSON.stringify({ event_type: 'check_in' }),
+      });
+    }
+  } catch (e) {}
 
+  const userStr = localStorage.getItem('user');
+  let user = userStr ? JSON.parse(userStr) : DEMO_FALLBACK_USERS['demo.participant@hackhub.ai'];
   const currentStreak = (user.profile?.check_in_streak || 0) + 1;
   const currentCount = (user.profile?.check_in_count || 0) + 1;
 
-  user.profile = {
-    ...(user.profile || {}),
-    check_in_streak: currentStreak,
-    check_in_count: currentCount,
-  };
-
+  user.profile = { ...(user.profile || {}), check_in_streak: currentStreak, check_in_count: currentCount };
   localStorage.setItem('user', JSON.stringify(user));
-  const users = getStorageUsers();
-  users[user.email.toLowerCase()] = user;
-  saveStorageUsers(users);
 
-  return {
-    already_checked_in: false,
-    message: `Daily check-in successful! (+1 streak, total: ${currentCount})`,
-    user,
-  };
+  return { already_checked_in: false, message: `Daily check-in successful! (+1 streak, total: ${currentCount})`, user };
 }
 
 export async function updateProfile(updatedData) {
-  const userStr = localStorage.getItem('user');
-  let user = userStr ? JSON.parse(userStr) : INITIAL_DEMO_USERS['demo.participant@hackhub.ai'];
-
-  if (updatedData.name) {
-    user.name = updatedData.name;
+  try {
+    const data = await apiFetch('/profile', {
+      method: 'PUT',
+      body: JSON.stringify(updatedData),
+    });
+    if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+    return data;
+  } catch (e) {
+    const userStr = localStorage.getItem('user');
+    let user = userStr ? JSON.parse(userStr) : DEMO_FALLBACK_USERS['demo.participant@hackhub.ai'];
+    user.profile = { ...(user.profile || {}), ...updatedData };
+    localStorage.setItem('user', JSON.stringify(user));
+    return { message: 'Profile updated locally', user, profile: user.profile };
   }
-
-  const existingProfile = user.profile || {};
-  const newProfile = {
-    ...existingProfile,
-    ...updatedData,
-    avatar_url: updatedData.avatar_url || updatedData.avatar || existingProfile.avatar_url || '',
-    skills: Array.isArray(updatedData.skills) ? JSON.stringify(updatedData.skills) : (updatedData.skills || existingProfile.skills || '[]'),
-    interests: Array.isArray(updatedData.interests) ? JSON.stringify(updatedData.interests) : (updatedData.interests || existingProfile.interests || '[]'),
-    techStack: Array.isArray(updatedData.techStack) ? JSON.stringify(updatedData.techStack) : (updatedData.techStack || existingProfile.techStack || '[]'),
-  };
-
-  user.profile = newProfile;
-  localStorage.setItem('user', JSON.stringify(user));
-
-  const users = getStorageUsers();
-  users[user.email.toLowerCase()] = user;
-  saveStorageUsers(users);
-
-  return {
-    message: 'Profile updated successfully',
-    user,
-    profile: newProfile,
-  };
 }
