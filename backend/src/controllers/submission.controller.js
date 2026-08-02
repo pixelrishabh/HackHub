@@ -1,390 +1,189 @@
-const prisma = require('../config/db');
-const { evaluateSubmissionWithAI } = require('../services/ai.service');
-const { checkAllSubmissionsSimilarity } = require('../services/similarity.service');
-const notificationService = require('../services/notification.service');
+const Submission = require('../models/Submission');
+const Team = require('../models/Team');
+const { evaluateSubmissionWithAI, calculateTFIDFSimilarity } = require('../services/ai.service');
 
-// Global cache or memory store for similarity check flags
-let similarityFlagsCache = [];
-
-function isUserAuthorizedForTeam(user, team) {
-  if (!user) return false;
-  const userRole = (user.role || '').toLowerCase();
-  if (['organizer', 'judge', 'mentor', 'sponsor'].includes(userRole)) {
-    return true;
-  }
-  let memberIds = [];
-  try {
-    memberIds = JSON.parse(team?.member_ids || '[]');
-  } catch (e) {}
-  return Array.isArray(memberIds) && memberIds.includes(user.id);
-}
-
-/**
- * Create or Update Submission for a Team
- */
 async function createOrUpdateSubmission(req, res) {
   try {
-    const { team_id, repo_link, description, demo_video_link, status } = req.body;
+    const { team_id, teamId, title, description, repo_link, repoLink, demo_video_link, demoVideoLink } = req.body;
+    const resolvedTeamId = team_id || teamId;
 
-    if (!team_id || !repo_link || !description) {
-      return res.status(400).json({ error: 'team_id, repo_link, and description are required.' });
+    if (!resolvedTeamId) {
+      return res.status(400).json({ error: 'Team ID is required.' });
     }
 
-    const team = await prisma.team.findUnique({ where: { id: team_id } });
-    if (!team) {
-      return res.status(404).json({ error: `Team with ID '${team_id}' not found.` });
-    }
+    let submission = await Submission.findOne({ teamId: resolvedTeamId });
 
-    // IDOR Protection: Staff or team member only
-    if (!isUserAuthorizedForTeam(req.user, team)) {
-      return res.status(403).json({ error: 'Access denied. You are not authorized to create/update submissions for this team.' });
-    }
-
-    const existingSubmission = await prisma.submission.findFirst({
-      where: { team_id },
-    });
-
-    let submission;
-    let eventType;
-
-    if (existingSubmission) {
-      submission = await prisma.submission.update({
-        where: { id: existingSubmission.id },
-        data: {
-          repo_link,
-          description,
-          demo_video_link: demo_video_link || existingSubmission.demo_video_link,
-          status: status || existingSubmission.status,
-        },
-      });
-      eventType = 'submission_update';
+    if (submission) {
+      submission.title = title || submission.title;
+      submission.description = description || submission.description;
+      submission.repoLink = repo_link || repoLink || submission.repoLink;
+      submission.demoVideoLink = demo_video_link || demoVideoLink || submission.demoVideoLink;
+      submission.status = 'SUBMITTED';
+      await submission.save();
     } else {
-      submission = await prisma.submission.create({
-        data: {
-          team_id,
-          repo_link,
-          description,
-          demo_video_link: demo_video_link || null,
-          status: status || 'SUBMITTED',
-        },
+      submission = await Submission.create({
+        teamId: resolvedTeamId,
+        title: title || 'Hackathon Project',
+        description: description || '',
+        repoLink: repo_link || repoLink || '',
+        demoVideoLink: demo_video_link || demoVideoLink || '',
+        status: 'SUBMITTED',
       });
-      eventType = 'submission_create';
     }
 
-    // Automatically log engagement event
-    await prisma.engagementEvent.create({
-      data: {
-        team_id,
-        user_id: req.user?.id || null,
-        event_type: eventType,
-      },
-    });
-    // Create notification for the user
-    await notificationService.createNotification(
-      req.user.id,
-      eventType,
-      existingSubmission ? 'Submission Updated' : 'Submission Created',
-      existingSubmission
-        ? 'Your submission has been updated successfully.'
-        : 'Your submission has been created successfully.'
-    );
-
-    return res.status(existingSubmission ? 200 : 201).json({
-      message: `Submission ${existingSubmission ? 'updated' : 'created'} successfully.`,
-      submission,
+    return res.status(201).json({
+      message: 'Submission saved successfully',
+      submission: submission.toJSON(),
     });
   } catch (error) {
     console.error('[SubmissionController] createOrUpdateSubmission Error:', error);
-    return res.status(500).json({ error: 'Failed to create/update submission.' });
+    return res.status(500).json({ error: 'Failed to save submission.' });
   }
 }
 
-/**
- * FEATURE 3 — AI Project Evaluation
- * Endpoint: POST /api/submissions/:id/evaluate
- */
-async function evaluateSubmission(req, res) {
-  try {
-    const { id } = req.params;
-
-    const submission = await prisma.submission.findUnique({
-      where: { id },
-      include: { team: true },
-    });
-
-    if (!submission) {
-      return res.status(404).json({ error: `Submission with ID '${id}' not found.` });
-    }
-
-    // Perform AI evaluation using LLM prompt service
-    const evaluationResult = await evaluateSubmissionWithAI({
-      repo_link: req.body.repo_link || submission.repo_link,
-      description: req.body.description || submission.description,
-      demo_video_link: req.body.demo_video_link || submission.demo_video_link,
-    });
-
-    // Save or update Evaluation record in DB
-    const existingEval = await prisma.evaluation.findFirst({
-      where: { submission_id: id },
-    });
-
-    let evaluation;
-    if (existingEval) {
-      evaluation = await prisma.evaluation.update({
-        where: { id: existingEval.id },
-        data: {
-          originality_score: evaluationResult.originality_score,
-          technical_depth_score: evaluationResult.technical_depth_score,
-          completeness_score: evaluationResult.completeness_score,
-          clarity_score: evaluationResult.clarity_score,
-          ai_justification_text: evaluationResult.justification,
-        },
-      });
-    } else {
-      evaluation = await prisma.evaluation.create({
-        data: {
-          submission_id: id,
-          originality_score: evaluationResult.originality_score,
-          technical_depth_score: evaluationResult.technical_depth_score,
-          completeness_score: evaluationResult.completeness_score,
-          clarity_score: evaluationResult.clarity_score,
-          ai_justification_text: evaluationResult.justification,
-          judge_manual_score: null,
-        },
-      });
-    }
-
-    return res.status(200).json({
-      message: 'AI evaluation completed successfully',
-      evaluation,
-    });
-  } catch (error) {
-    console.error('[SubmissionController] evaluateSubmission Error:', error);
-    return res.status(500).json({ error: 'AI Evaluation failed. Please try again.' });
-  }
-}
-
-/**
- * FEATURE 3 — Get Submission Scorecard (AI Scorecard + Judge's Manual Score side by side)
- * Endpoint: GET /api/submissions/:id/evaluation
- */
-async function getSubmissionEvaluation(req, res) {
-  try {
-    const { id } = req.params;
-
-    const submission = await prisma.submission.findUnique({
-      where: { id },
-      include: {
-        team: true,
-        evaluations: { orderBy: { createdAt: 'desc' } },
-      },
-    });
-
-    if (!submission) {
-      return res.status(404).json({ error: `Submission with ID '${id}' not found.` });
-    }
-
-    // IDOR Protection: Staff or submitting team member only
-    if (!isUserAuthorizedForTeam(req.user, submission.team)) {
-      return res.status(403).json({ error: 'Access denied. You are not authorized to view evaluation details for this submission.' });
-    }
-
-    const latestEval = submission.evaluations[0] || null;
-
-    if (!latestEval) {
-      return res.status(200).json({
-        submission_id: id,
-        team_name: submission.team.name,
-        evaluated: false,
-        message: 'Submission has not been evaluated by AI yet.',
-      });
-    }
-
-    const aiAverageScore = Number(
-      ((latestEval.originality_score +
-        latestEval.technical_depth_score +
-        latestEval.completeness_score +
-        latestEval.clarity_score) / 4).toFixed(2)
-    );
-
-    return res.status(200).json({
-      submission_id: id,
-      team_id: submission.team_id,
-      team_name: submission.team.name,
-      repo_link: submission.repo_link,
-      description: submission.description,
-      demo_video_link: submission.demo_video_link,
-      evaluated: true,
-      scorecard: {
-        ai_scorecard: {
-          originality_score: latestEval.originality_score,
-          technical_depth_score: latestEval.technical_depth_score,
-          completeness_score: latestEval.completeness_score,
-          clarity_score: latestEval.clarity_score,
-          ai_overall_average: aiAverageScore,
-          ai_justification_text: latestEval.ai_justification_text,
-        },
-        judge_manual_scorecard: {
-          judge_manual_score: latestEval.judge_manual_score,
-          has_manual_score: latestEval.judge_manual_score !== null,
-        },
-      },
-    });
-  } catch (error) {
-    console.error('[SubmissionController] getSubmissionEvaluation Error:', error);
-    return res.status(500).json({ error: 'Failed to fetch submission evaluation.' });
-  }
-}
-
-/**
- * Judge Manual Score Update
- * Endpoint: PATCH /api/submissions/:id/manual-score
- */
-async function updateJudgeManualScore(req, res) {
-  try {
-    const { id } = req.params;
-    const { judge_manual_score } = req.body;
-
-    if (judge_manual_score === undefined || typeof judge_manual_score !== 'number') {
-      return res.status(400).json({ error: 'Numeric judge_manual_score is required.' });
-    }
-
-    let evalObj = await prisma.evaluation.findFirst({ where: { submission_id: id } });
-
-    if (!evalObj) {
-      evalObj = await prisma.evaluation.create({
-        data: {
-          submission_id: id,
-          originality_score: 0,
-          technical_depth_score: 0,
-          completeness_score: 0,
-          clarity_score: 0,
-          ai_justification_text: 'Manual score assigned by judge.',
-          judge_manual_score: judge_manual_score,
-        },
-      });
-    } else {
-      evalObj = await prisma.evaluation.update({
-        where: { id: evalObj.id },
-        data: { judge_manual_score: judge_manual_score },
-      });
-    }
-
-    return res.status(200).json({
-      message: 'Judge manual score updated successfully.',
-      evaluation: evalObj,
-    });
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to update judge manual score.' });
-  }
-}
-
-/**
- * FEATURE 5 — AI Plagiarism/Similarity Detection
- * Endpoint: POST /api/submissions/check-similarity
- */
-async function checkSimilarity(req, res) {
-  try {
-    const threshold = req.body.threshold ? parseFloat(req.body.threshold) : 0.85;
-
-    const submissions = await prisma.submission.findMany({
-      include: { team: true },
-    });
-
-    if (submissions.length < 2) {
-      return res.status(200).json({
-        message: 'At least 2 submissions are required to run similarity analysis.',
-        total_submissions: submissions.length,
-        flagged_pairs: [],
-      });
-    }
-
-    const mappedSubmissions = submissions.map(s => ({
-      id: s.id,
-      team_id: s.team_id,
-      team_name: s.team.name,
-      repo_link: s.repo_link,
-      description: s.description,
-    }));
-
-    const flaggedPairs = await checkAllSubmissionsSimilarity(mappedSubmissions, threshold);
-    similarityFlagsCache = flaggedPairs;
-
-    return res.status(200).json({
-      message: `Similarity check completed over ${submissions.length} submission(s).`,
-      threshold_used: threshold,
-      flagged_count: flaggedPairs.length,
-      flagged_pairs: flaggedPairs,
-    });
-  } catch (error) {
-    console.error('[SubmissionController] checkSimilarity Error:', error);
-    return res.status(500).json({ error: 'Similarity detection failed.' });
-  }
-}
-
-/**
- * FEATURE 5 — GET Flagged Similarity Pairs
- * Endpoint: GET /api/submissions/similarity-flags
- */
-async function getSimilarityFlags(req, res) {
-  try {
-    if (similarityFlagsCache.length === 0) {
-      // Run quick check if cache is empty
-      const submissions = await prisma.submission.findMany({ include: { team: true } });
-      if (submissions.length >= 2) {
-        similarityFlagsCache = await checkAllSubmissionsSimilarity(
-          submissions.map(s => ({
-            id: s.id,
-            team_id: s.team_id,
-            team_name: s.team.name,
-            repo_link: s.repo_link,
-            description: s.description,
-          })),
-          0.85
-        );
-      }
-    }
-
-    return res.status(200).json({
-      flagged_pairs: similarityFlagsCache,
-      total_flagged: similarityFlagsCache.length,
-    });
-  } catch (error) {
-    return res.status(500).json({ error: 'Failed to fetch similarity flags.' });
-  }
-}
-
-/**
- * List submissions (Scoped for participants)
- */
 async function getAllSubmissions(req, res) {
   try {
-    let submissions = await prisma.submission.findMany({
-      include: { team: true, evaluations: true },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    // Data Scoping: Participants see only their team's submissions, staff sees all
-    const userRole = (req.user?.role || '').toLowerCase();
-    const isStaff = ['organizer', 'judge', 'mentor', 'sponsor'].includes(userRole);
-    if (!isStaff && req.user) {
-      submissions = submissions.filter(s => isUserAuthorizedForTeam(req.user, s.team));
-    }
-
-    return res.status(200).json({ submissions });
+    const submissions = await Submission.find().populate('teamId', 'name category primaryField').sort({ createdAt: -1 });
+    const formatted = submissions.map((s) => s.toJSON());
+    return res.status(200).json({ submissions: formatted });
   } catch (error) {
     console.error('[SubmissionController] getAllSubmissions Error:', error);
     return res.status(500).json({ error: 'Failed to fetch submissions.' });
   }
 }
 
+async function evaluateSubmission(req, res) {
+  try {
+    const { id } = req.params;
+    const submission = await Submission.findById(id);
+    if (!submission) {
+      return res.status(404).json({ error: `Submission with ID '${id}' not found.` });
+    }
+
+    const aiEval = await evaluateSubmissionWithAI(submission);
+    submission.aiEvaluation = {
+      ...aiEval,
+      evaluated_at: new Date(),
+    };
+    submission.status = 'EVALUATED';
+    await submission.save();
+
+    return res.status(200).json({
+      message: 'Project evaluated successfully by AI Scorecard Engine.',
+      evaluation: submission.aiEvaluation,
+      submission: submission.toJSON(),
+    });
+  } catch (error) {
+    console.error('[SubmissionController] evaluateSubmission Error:', error);
+    return res.status(500).json({ error: 'Failed to run AI evaluation.' });
+  }
+}
+
+async function getEvaluation(req, res) {
+  try {
+    const { id } = req.params;
+    const submission = await Submission.findById(id);
+    if (!submission || !submission.aiEvaluation) {
+      return res.status(404).json({ error: 'Evaluation not found for this submission.' });
+    }
+
+    return res.status(200).json({ evaluation: submission.aiEvaluation });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch evaluation.' });
+  }
+}
+
+async function updateManualScore(req, res) {
+  try {
+    const { id } = req.params;
+    const { judge_manual_score, score } = req.body;
+    const val = judge_manual_score !== undefined ? judge_manual_score : score;
+
+    const submission = await Submission.findById(id);
+    if (!submission) {
+      return res.status(404).json({ error: `Submission with ID '${id}' not found.` });
+    }
+
+    submission.judgeManualScore = parseFloat(val);
+    await submission.save();
+
+    return res.status(200).json({
+      message: 'Manual judge score updated successfully.',
+      submission: submission.toJSON(),
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to update manual score.' });
+  }
+}
+
+async function checkSimilarity(req, res) {
+  try {
+    const threshold = req.body?.threshold ? parseFloat(req.body.threshold) : 0.7;
+    const submissions = await Submission.find().populate('teamId', 'name');
+
+    const flaggedPairs = [];
+    for (let i = 0; i < submissions.length; i++) {
+      for (let j = i + 1; j < submissions.length; j++) {
+        const subA = submissions[i];
+        const subB = submissions[j];
+
+        const textA = `${subA.title} ${subA.description} ${subA.repoLink}`;
+        const textB = `${subB.title} ${subB.description} ${subB.repoLink}`;
+
+        const score = calculateTFIDFSimilarity(textA, textB);
+        if (score >= threshold) {
+          flaggedPairs.push({
+            submission_a_id: subA._id.toString(),
+            team_a_name: subA.teamId ? subA.teamId.name : 'Team A',
+            submission_b_id: subB._id.toString(),
+            team_b_name: subB.teamId ? subB.teamId.name : 'Team B',
+            similarity_score: score,
+            flagged_reason: 'High textual and code structure overlap detected.',
+          });
+        }
+      }
+    }
+
+    return res.status(200).json({
+      threshold,
+      flagged_count: flaggedPairs.length,
+      flagged_pairs: flaggedPairs,
+    });
+  } catch (error) {
+    console.error('[SubmissionController] checkSimilarity Error:', error);
+    return res.status(500).json({ error: 'Similarity check failed.' });
+  }
+}
+
+async function getSimilarityFlags(req, res) {
+  try {
+    const submissions = await Submission.find({ 'similarityFlags.0': { $exists: true } });
+    const flags = [];
+
+    submissions.forEach((s) => {
+      s.similarityFlags.forEach((f) => {
+        flags.push({
+          submission_id: s._id.toString(),
+          target_submission_id: f.target_submission_id,
+          target_team_name: f.target_team_name,
+          similarity_score: f.similarity_score,
+          flagged_reason: f.flagged_reason,
+        });
+      });
+    });
+
+    return res.status(200).json({ flags });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to fetch similarity flags.' });
+  }
+}
+
 module.exports = {
   createOrUpdateSubmission,
+  getAllSubmissions,
   evaluateSubmission,
-  getSubmissionEvaluation,
-  updateJudgeManualScore,
+  getEvaluation,
+  updateManualScore,
   checkSimilarity,
   getSimilarityFlags,
-  getAllSubmissions,
 };
-

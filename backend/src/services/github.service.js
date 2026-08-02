@@ -1,47 +1,37 @@
-const https = require('https');
-
 /**
- * Fetch raw README content from a GitHub repository link.
- * @param {string} repoLink 
- * @returns {Promise<string|null>} README content or null if unfetchable
+ * Fetch GitHub README for code context.
  */
 async function fetchGithubReadme(repoLink) {
   if (!repoLink || typeof repoLink !== 'string') return null;
 
   try {
-    // Extract owner and repo from URL like https://github.com/owner/repo or https://github.com/owner/repo.git
-    const match = repoLink.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-    if (!match) return null;
+    const cleaned = repoLink.replace(/\/$/, '').replace('https://github.com/', '');
+    const parts = cleaned.split('/');
+    if (parts.length < 2) return null;
 
-    const owner = match[1];
-    const repo = match[2].replace(/\.git$/, '');
+    const owner = parts[0];
+    const repo = parts[1];
 
-    const branches = ['main', 'master'];
-    for (const branch of branches) {
-      const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/README.md`;
-      const content = await httpGet(rawUrl);
-      if (content && !content.includes('404: Not Found')) {
-        return content.length > 3000 ? content.substring(0, 3000) + '\n...[truncated]' : content;
-      }
+    const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/main/README.md`;
+    const response = await fetch(rawUrl);
+
+    if (response.ok) {
+      const text = await response.text();
+      return text.substring(0, 4000); // cap context length
     }
-    return null;
-  } catch (err) {
-    console.warn(`[GithubService] Could not fetch README for ${repoLink}:`, err.message);
-    return null;
-  }
-}
 
-function httpGet(url) {
-  return new Promise((resolve) => {
-    https.get(url, { headers: { 'User-Agent': 'HackHub-Backend' } }, (res) => {
-      if (res.statusCode !== 200) {
-        return resolve(null);
-      }
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => resolve(data));
-    }).on('error', () => resolve(null));
-  });
+    // Try master branch fallback
+    const masterUrl = `https://raw.githubusercontent.com/${owner}/${repo}/master/README.md`;
+    const masterRes = await fetch(masterUrl);
+    if (masterRes.ok) {
+      const text = await masterRes.text();
+      return text.substring(0, 4000);
+    }
+  } catch (e) {
+    console.warn('[GitHubService] Failed to fetch README:', e.message);
+  }
+
+  return null;
 }
 
 module.exports = {

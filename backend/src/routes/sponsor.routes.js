@@ -3,11 +3,9 @@ const router = express.Router();
 const sponsorController = require('../controllers/sponsor.controller');
 const { authenticate, authorize } = require('../middleware/auth.middleware');
 
-const sponsorAuth = [authenticate, authorize(['sponsor', 'organizer', 'judge', 'mentor'])];
-
-router.get('/projects', sponsorAuth, sponsorController.getSponsorProjects);
-router.get('/talent', sponsorAuth, sponsorController.getSponsorTalent);
-router.post('/bookmark', sponsorAuth, sponsorController.toggleBookmark);
-router.get('/bookmarks', sponsorAuth, sponsorController.getSponsorBookmarks);
+router.get('/projects', authenticate, sponsorController.getProjects);
+router.get('/talent', authenticate, sponsorController.getTalent);
+router.post('/bookmark', authenticate, authorize(['sponsor', 'organizer']), sponsorController.addBookmark);
+router.get('/bookmarks', authenticate, authorize(['sponsor', 'organizer']), sponsorController.getBookmarks);
 
 module.exports = router;

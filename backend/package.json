@@ -1,40 +1,23 @@
 {
   "name": "hackhub-backend",
   "version": "1.0.0",
-  "description": "AI-powered hackathon management platform backend",
+  "description": "HackHub AI Backend - MERN Stack (MongoDB + Express + Node.js)",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "build": "npx prisma generate",
     "dev": "node --watch src/server.js",
-    "prisma:generate": "npx prisma generate",
-    "prisma:push": "npx prisma db push --accept-data-loss",
-    "postinstall": "prisma generate",
     "seed": "node src/scripts/seed.js",
-    "test": "node src/scripts/test_all_features.js"
+    "test:api": "node src/scripts/test_all_endpoints.js"
   },
-  "keywords": [
-    "hackathon",
-    "ai",
-    "gemini",
-    "express",
-    "prisma",
-    "hackops"
-  ],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "@google/generative-ai": "^0.24.0",
-    "@prisma/client": "^5.14.0",
+    "@google/generative-ai": "^0.21.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "express-rate-limit": "^8.6.0",
-    "helmet": "^8.3.0",
-    "jsonwebtoken": "^9.0.2"
-  },
-  "devDependencies": {
-    "prisma": "^5.14.0"
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.7.0"
   }
 }
