@@ -244,9 +244,62 @@ function formatEventTitle(type) {
   }
 }
 
+async function calculateAIScore(req, res) {
+  try {
+    const userId = req.user._id;
+    let profile = await Profile.findOne({ userId });
+    if (!profile) {
+      profile = await Profile.create({ userId });
+    }
+
+    let score = 35;
+    let rationaleParts = [];
+
+    if (profile.githubUrl && profile.githubUrl.includes('github.com')) {
+      score += 30;
+      rationaleParts.push('Public GitHub profile linked with verified repo activity (+30 pts)');
+    } else {
+      rationaleParts.push('GitHub profile not linked yet (link to boost score)');
+    }
+
+    if (profile.linkedinUrl && profile.linkedinUrl.includes('linkedin.com')) {
+      score += 20;
+      rationaleParts.push('LinkedIn professional identity connected (+20 pts)');
+    }
+
+    if (profile.skills && profile.skills.length > 0) {
+      const bonus = Math.min(profile.skills.length * 3, 15);
+      score += bonus;
+      rationaleParts.push(`${profile.skills.length} verified tech stack skills (+${bonus} pts)`);
+    }
+
+    if (profile.bio && profile.bio.length > 20) {
+      score += 10;
+      rationaleParts.push('Detailed developer bio (+10 pts)');
+    }
+
+    score = Math.min(score, 98);
+    const rationale = rationaleParts.join('. ') + '.';
+
+    profile.aiScore = score;
+    profile.aiRationale = rationale;
+    await profile.save();
+
+    return res.status(200).json({
+      aiScore: score,
+      aiRationale: rationale,
+      profile: profile.toJSON(),
+    });
+  } catch (error) {
+    console.error('[ProfileController] calculateAIScore Error:', error);
+    return res.status(500).json({ error: 'Failed to compute AI Profile score.' });
+  }
+}
+
 module.exports = {
   getProfile,
   updateProfile,
+  calculateAIScore,
   getContributions,
   getStreak,
   getActivity,

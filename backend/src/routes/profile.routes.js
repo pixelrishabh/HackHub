@@ -8,6 +8,7 @@ router.get('/contributions', authenticate, profileController.getContributions);
 router.get('/streak', authenticate, profileController.getStreak);
 router.get('/activity', authenticate, profileController.getActivity);
 router.post('/activity', authenticate, profileController.postActivity);
+router.post('/ai-score', authenticate, profileController.calculateAIScore);
 router.put('/', authenticate, profileController.updateProfile);
 router.get('/:userId', authenticate, profileController.getProfile);
 

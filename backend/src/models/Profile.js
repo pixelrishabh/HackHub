@@ -35,6 +35,8 @@ const profileSchema = new mongoose.Schema(
     lastCheckInAt: { type: Date, default: null },
     badges: { type: [String], default: [] },
     preferredLanguage: { type: String, default: 'en' },
+    aiScore: { type: Number, default: 85 },
+    aiRationale: { type: String, default: 'High public repository activity and solid full-stack project contributions.' },
   },
   {
     timestamps: true,

@@ -9,7 +9,12 @@ import { HallOfFame } from '../components/HallOfFame';
 import { BarChart2, Users, CheckSquare, Zap, Trophy, AlertCircle, RefreshCw, Award, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { Page3DCanvas } from '../components/Page3DCanvas';
 
+import { useAuth } from '../hooks/useAuth';
+import { AVAILABLE_FIELDS } from '../config/fieldConfig';
+
 export function EngagementPage() {
+  const { primaryField, setPrimaryField } = useAuth();
+  const [selectedTrackFilter, setSelectedTrackFilter] = useState(primaryField || 'ALL');
   const [dashboardData, setDashboardData] = useState([]);
   const [totalTeams, setTotalTeams] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -22,8 +27,9 @@ export function EngagementPage() {
     setError('');
     try {
       const res = await getEngagementDashboard();
-      setDashboardData(res.dashboard || []);
-      setTotalTeams(res.total_teams || 0);
+      const rawData = res.dashboard || res.leaderboard || [];
+      setDashboardData(rawData);
+      setTotalTeams(res.total_teams || rawData.length);
     } catch (err) {
       setError(err.message || 'Failed to fetch engagement dashboard.');
     } finally {
@@ -34,6 +40,12 @@ export function EngagementPage() {
   useEffect(() => {
     loadEngagementData();
   }, []);
+
+  useEffect(() => {
+    if (primaryField) {
+      setSelectedTrackFilter(primaryField);
+    }
+  }, [primaryField]);
 
   const handleAdminCheckIn = async (teamId, teamName) => {
     setActionLoadingId(teamId);
@@ -86,6 +98,39 @@ export function EngagementPage() {
           <RefreshCw className="w-4 h-4 text-black" />
           <span>Refresh Pulse Data</span>
         </button>
+      </div>
+
+      {/* Field / Track Filter Pills Bar */}
+      <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
+        <span className="text-xs font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-2">Filter Track:</span>
+        <button
+          onClick={() => {
+            setSelectedTrackFilter('ALL');
+          }}
+          className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
+            selectedTrackFilter === 'ALL'
+              ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/25'
+              : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10'
+          }`}
+        >
+          All Tracks
+        </button>
+        {AVAILABLE_FIELDS.map((field) => (
+          <button
+            key={field.id}
+            onClick={() => {
+              setSelectedTrackFilter(field.id);
+              setPrimaryField(field.id);
+            }}
+            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 ${
+              selectedTrackFilter === field.id
+                ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/25'
+                : 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10'
+            }`}
+          >
+            {field.name}
+          </button>
+        ))}
       </div>
 
       {actionMessage && (

@@ -54,6 +54,8 @@ app.get(['/api/health', '/health'], (req, res) => {
   });
 });
 
+const certificateRoutes = require('./routes/certificate.routes');
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
@@ -64,6 +66,7 @@ app.use('/api/ideas', ideaRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/sponsor', sponsorRoutes);
+app.use('/api/certificates', certificateRoutes);
 app.get('/api/engagement/dashboard', authenticate, getEngagementDashboard);
 
 // 404 Route Handler

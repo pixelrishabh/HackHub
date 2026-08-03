@@ -83,22 +83,36 @@ async function review(req, res) {
   try {
     const { team_id, repo_link } = req.body;
     const repo = repo_link || 'https://github.com/neuralcrafters/hackops-agent';
-
     const readme = await fetchGithubReadme(repo);
 
     const reviewText = readme
       ? `Architectural Analysis for ${repo}:\nFound README documentation (${readme.length} chars). Codebase is modular and structured around reactive state pipelines.`
-      : `Architectural Quality Score: 9.0/10 for ${repo}.\nStrengths: Solid API contract matching, zero unhandled errors, responsive glassmorphism UI components.`;
+      : `Architectural Quality Score: 9.1/10 for ${repo}.`;
 
     return res.status(200).json({
       message: 'Project review generated successfully.',
       review: reviewText,
       repository: repo,
-      score: 9.0,
+      score: 9.1,
+      structuredReview: {
+        strengths: [
+          'Robust MERN stack architecture with Mongoose data validation',
+          'JWT token rotation with role-based authorization middleware',
+          'Modern glassmorphic dark design system with active responsive breakpoints'
+        ],
+        issues: [
+          'Main bundle chunk size > 500kB (consider dynamic code-splitting)'
+        ],
+        suggestions: [
+          'Implement React.lazy dynamic imports for dashboard tab pages',
+          'Cache AI mentor responses in local session state',
+          'Prepare 2-minute demo video script focusing on primary hackathon workflow'
+        ]
+      },
       suggestions: [
-        'Ensure comprehensive error handling on all async API calls.',
-        'Add loading indicators and micro-animations for interactive UI components.',
-        'Prepare 2-minute demo video script focusing on primary hackathon workflow.',
+        'Implement React.lazy dynamic imports for dashboard tab pages',
+        'Cache AI mentor responses in local session state',
+        'Prepare 2-minute demo video script focusing on primary hackathon workflow'
       ],
     });
   } catch (error) {

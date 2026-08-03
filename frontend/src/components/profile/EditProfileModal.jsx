@@ -132,7 +132,7 @@ export function EditProfileModal({
         name: activeUser.name !== undefined ? activeUser.name : '',
         username: activeProfile.username !== undefined ? activeProfile.username : (activeUser.name ? activeUser.name.toLowerCase().replace(/\s+/g, '_') : ''),
         bio: activeProfile.bio !== undefined ? activeProfile.bio : '',
-        avatar: activeProfile.avatar !== undefined ? activeProfile.avatar : '',
+        avatar: activeProfile.avatarUrl || activeProfile.avatar_url || activeProfile.avatar || '',
         banner: activeProfile.banner !== undefined ? activeProfile.banner : '',
         location: activeProfile.location !== undefined ? activeProfile.location : '',
         university: activeProfile.university !== undefined ? activeProfile.university : '',
@@ -282,11 +282,25 @@ export function EditProfileModal({
     setSaveSuccess(false);
 
     try {
+      const payload = {
+        ...formData,
+        avatar_url: formData.avatar,
+        avatarUrl: formData.avatar,
+      };
+
       let res;
       if (onSave) {
-        res = await onSave(formData);
+        res = await onSave(payload);
       } else {
-        res = await updateProfile(formData);
+        res = await updateProfile(payload);
+      }
+
+      // Automatically recalculate AI profile credibility score
+      try {
+        const { calculateAIScore } = await import('../../api/profile');
+        await calculateAIScore();
+      } catch (e) {
+        console.warn('AI score recalculation warning:', e);
       }
 
       const updatedProfileObj = res?.profile || formData;

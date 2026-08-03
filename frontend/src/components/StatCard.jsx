@@ -1,27 +1,37 @@
 import React from 'react';
 
-export function StatCard({ title, value, icon: Icon, subtext, trend, color = 'cyan' }) {
-  const isGreen = color === 'green';
+export function StatCard({ title, value, subtitle, subtext, icon: Icon, trend, color = 'cyan' }) {
+  const trendText = typeof trend === 'object' ? trend?.value : trend;
+  const isPositive = typeof trend === 'object' ? trend?.isPositive !== false : true;
+  const cardSubtitle = subtitle || subtext;
 
   return (
-    <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow duration-200">
+    <div className="glass-panel p-5 rounded-2xl border border-white/15 backdrop-blur-2xl shadow-xl hover:border-cyan-500/30 transition-all group">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</span>
+        <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-200 transition-colors">
+          {title}
+        </span>
         {Icon && (
-          <div className={`p-2 rounded-lg ${isGreen ? 'bg-secondary-50 text-secondary-600' : 'bg-primary-50 text-primary-600'}`}>
-            <Icon className="w-5 h-5" />
+          <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 group-hover:scale-105 transition-transform">
+            <Icon className="w-4 h-4" />
           </div>
         )}
       </div>
-      <div className="mt-3 flex items-baseline justify-between">
-        <span className="text-2xl font-bold text-slate-800 tracking-tight">{value}</span>
-        {trend && (
-          <span className="text-xs font-semibold text-secondary-600 bg-secondary-50 px-2 py-0.5 rounded-full">
-            {trend}
+      <div className="mt-3 flex items-baseline justify-between gap-2">
+        <span className="text-2xl font-black text-white tracking-tight truncate">{value}</span>
+        {trendText && (
+          <span
+            className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border shrink-0 ${
+              isPositive
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+            }`}
+          >
+            {trendText}
           </span>
         )}
       </div>
-      {subtext && <p className="mt-1 text-xs text-slate-400">{subtext}</p>}
+      {cardSubtitle && <p className="mt-1.5 text-xs text-slate-400 truncate">{cardSubtitle}</p>}
     </div>
   );
 }

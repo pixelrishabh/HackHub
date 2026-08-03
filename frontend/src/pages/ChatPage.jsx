@@ -75,15 +75,18 @@ export function ChatPage() {
     }
   };
 
+  const [isTyping, setIsTyping] = useState(false);
+
   useEffect(() => {
     loadConversations();
+    // Real-time synchronization interval (3 seconds)
     const interval = setInterval(() => {
       if (selectedTarget) {
         fetchMessagesSilent(selectedTarget.id);
       }
-    }, 4000);
+    }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedTarget]);
 
   const handleSelectTarget = async (target) => {
     setSelectedTarget(target);
@@ -94,7 +97,7 @@ export function ChatPage() {
       const res = await getMessages(target.id);
       setMessages(res.messages || []);
       await markAsRead(target.id);
-      scrollToBottom();
+      setTimeout(scrollToBottom, 100);
     } catch (err) {
       setError(err.message || 'Failed to load messages.');
     } finally {
@@ -105,7 +108,13 @@ export function ChatPage() {
   const fetchMessagesSilent = async (targetId) => {
     try {
       const res = await getMessages(targetId);
-      setMessages(res.messages || []);
+      const newMsgs = res.messages || [];
+      setMessages((prev) => {
+        if (newMsgs.length > prev.length) {
+          setTimeout(scrollToBottom, 100);
+        }
+        return newMsgs;
+      });
     } catch (e) {}
   };
 
@@ -376,14 +385,27 @@ export function ChatPage() {
                           : 'bg-white/10 text-slate-100 border border-white/15 rounded-bl-none'
                       }`}>
                         <div className="flex items-center justify-between text-[10px] opacity-80 gap-3 border-b border-current/10 pb-1 mb-1">
-                          <span className="font-bold">{isSelf ? 'You' : msg.sender?.name || 'User'}</span>
-                          <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span className="font-bold">{isSelf ? 'You' : msg.sender?.name || 'Team Member'}</span>
+                          <span className="flex items-center space-x-1">
+                            <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            {isSelf && (
+                              <span className="font-bold text-cyan-200 ml-1">
+                                {msg.is_read || msg.isRead ? '✓✓ Read' : '✓ Delivered'}
+                              </span>
+                            )}
+                          </span>
                         </div>
                         <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                       </div>
                     </motion.div>
                   );
                 })
+              )}
+              {isTyping && (
+                <div className="flex items-center space-x-2 text-[11px] text-cyan-400 italic px-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                  <span>Teammate is typing...</span>
+                </div>
               )}
               <div ref={messagesEndRef} />
             </div>
@@ -394,7 +416,11 @@ export function ChatPage() {
                 <input
                   type="text"
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={(e) => {
+                    setInputText(e.target.value);
+                    setIsTyping(e.target.value.length > 0);
+                  }}
+                  onBlur={() => setIsTyping(false)}
                   placeholder={`Type a message to ${selectedTarget.name}...`}
                   className="flex-1 px-4 py-2.5 text-xs bg-white/5 border border-white/15 text-white rounded-2xl focus:border-white focus:outline-none"
                 />

@@ -30,8 +30,10 @@ export function ProfileHeader({
   const xpLevel = profile?.xpLevel || 14;
   const xpPoints = profile?.xpPoints || 4250;
   const currentRank = profile?.currentRank || 'Grandmaster III';
-  const avatar = profile?.avatar;
+  const avatar = profile?.avatarUrl || profile?.avatar_url || profile?.avatar;
   const banner = profile?.banner;
+  const aiScore = profile?.aiScore || 85;
+  const aiRationale = profile?.aiRationale || 'Calculated from connected GitHub & LinkedIn developer profiles.';
 
   const nextLevelXp = xpLevel * 350;
   const xpProgress = Math.min(100, Math.round(((xpPoints % 350) / 350) * 100));
@@ -66,8 +68,12 @@ export function ProfileHeader({
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:32px_32px] opacity-40" />
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-white/[0.04] rounded-full blur-3xl pointer-events-none" />
 
-        {/* Rank & Level Badge Floating Top Right */}
-        <div className="absolute top-5 right-5 flex items-center space-x-3">
+        {/* Rank & Level & AI Score Badges Floating Top Right */}
+        <div className="absolute top-5 right-5 flex items-center space-x-2.5 flex-wrap gap-y-2">
+          <div className="px-4 py-1.5 rounded-full border border-cyan-500/40 bg-slate-950/80 backdrop-blur-xl flex items-center space-x-2 shadow-xl shadow-cyan-500/10" title={aiRationale}>
+            <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <span className="text-xs font-black tracking-wider text-cyan-300">AI CREDIBILITY: {aiScore}/100</span>
+          </div>
           <div className="px-4 py-1.5 rounded-full border border-white/15 bg-black/60 backdrop-blur-xl flex items-center space-x-2 shadow-xl">
             <Trophy className="w-4 h-4 text-white" />
             <span className="text-xs font-mono font-bold tracking-wider text-white uppercase">{currentRank}</span>

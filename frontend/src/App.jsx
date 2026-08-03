@@ -22,6 +22,7 @@ import { EngagementPage } from './pages/EngagementPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ChatPage } from './pages/ChatPage';
 import { SponsorDashboardPage } from './pages/SponsorDashboardPage';
+import { CertificatesPage } from './pages/CertificatesPage';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -138,6 +139,15 @@ function AnimatedRoutes() {
             element={
               <RoleGuard allowedRoles={['sponsor', 'organizer', 'judge', 'mentor']}>
                 <SponsorDashboardPage />
+              </RoleGuard>
+            }
+          />
+
+          <Route
+            path="/dashboard/certificates"
+            element={
+              <RoleGuard allowedRoles={['participant', 'organizer', 'judge', 'mentor', 'sponsor']}>
+                <CertificatesPage />
               </RoleGuard>
             }
           />
