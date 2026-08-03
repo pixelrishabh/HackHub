@@ -41,8 +41,11 @@ export function MarketplacePage() {
   const [actionMessage, setActionMessage] = useState(null);
 
   useEffect(() => {
-    fetchHackathons();
-  }, [statusFilter, trackFilter]);
+    const timer = setTimeout(() => {
+      fetchHackathons();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [statusFilter, trackFilter, searchQuery]);
 
   const fetchHackathons = async () => {
     try {

@@ -84,12 +84,36 @@ async function runTests() {
   });
   const orgAuthHeaders = { Authorization: `Bearer ${orgLoginRes?.token}` };
 
-  // 4. Register Participant
+  // 4. Register Participant & Staff (Judge / Organizer)
   await testEndpoint('Register Participant', '/api/auth/register', 'POST', {}, {
     name: 'New Test Participant',
     email: `test_${Date.now()}@hackhub.ai`,
     password: 'Password123!',
+    role: 'participant',
   });
+
+  await testEndpoint('Register Judge with Staff Invite Code', '/api/auth/register', 'POST', {}, {
+    name: 'New Judge User',
+    email: `judge_${Date.now()}@hackhub.ai`,
+    password: 'Password123!',
+    role: 'judge',
+    inviteCode: 'HACKHUB-STAFF-2026',
+  });
+
+  await testEndpoint('Register Organizer with Staff Invite Code', '/api/auth/register', 'POST', {}, {
+    name: 'New Organizer User',
+    email: `organizer_${Date.now()}@hackhub.ai`,
+    password: 'Password123!',
+    role: 'organizer',
+    inviteCode: 'HACKHUB-STAFF-2026',
+  });
+
+  await testEndpoint('Reject Organizer Registration without Invite Code', '/api/auth/register', 'POST', {}, {
+    name: 'Unauthorized Organizer',
+    email: `unauth_${Date.now()}@hackhub.ai`,
+    password: 'Password123!',
+    role: 'organizer',
+  }, [403]);
 
   // 5. Create Staff (Organizer only)
   await testEndpoint('Create Staff Account', '/api/auth/create-staff', 'POST', orgAuthHeaders, {

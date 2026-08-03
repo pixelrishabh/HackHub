@@ -5,11 +5,11 @@ const Profile = require('../models/Profile');
 const { JWT_SECRET } = require('../middleware/auth.middleware');
 
 /**
- * Register User (Forces role='participant' server-side)
+ * Register User (Role Selection with Invite Code Verification for Staff Roles)
  */
 async function register(req, res) {
   try {
-    const { name, email, password, skills, experience_level } = req.body;
+    const { name, email, password, role, inviteCode, skills, experience_level } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email, and password are required fields.' });
@@ -21,14 +21,30 @@ async function register(req, res) {
       return res.status(400).json({ error: 'An account with this email already exists.' });
     }
 
+    const allowedRoles = ['participant', 'mentor', 'judge', 'organizer', 'sponsor'];
+    const requestedRole = (role && allowedRoles.includes(String(role).toLowerCase()))
+      ? String(role).toLowerCase()
+      : 'participant';
+
+    // Privileged Staff Roles Gate
+    if (requestedRole !== 'participant') {
+      const validInviteCodes = ['HACKHUB-STAFF-2026', 'HACKHUB-VIP-2026', 'HACKHUB-ORGANIZER-2026'];
+      const normInviteCode = String(inviteCode || '').trim().toUpperCase();
+
+      if (!validInviteCodes.includes(normInviteCode)) {
+        return res.status(403).json({
+          error: 'Invalid or missing Staff Invite Code. Registration for Organizer, Judge, Mentor, or Sponsor roles requires an authorized Invite Code (e.g. HACKHUB-STAFF-2026).',
+        });
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // CRITICAL: Force role='participant' server-side
     const user = await User.create({
       name: String(name).trim(),
       email: normEmail,
       password: hashedPassword,
-      role: 'participant',
+      role: requestedRole,
     });
 
     const parsedSkills = Array.isArray(skills) ? skills : [];
@@ -47,7 +63,7 @@ async function register(req, res) {
     userObj.profile = profile.toJSON();
 
     return res.status(201).json({
-      message: 'Participant registered successfully',
+      message: `Account created successfully with role '${user.role}'`,
       token,
       user: userObj,
     });

@@ -19,6 +19,8 @@ export function RegisterPage() {
     name: '',
     email: '',
     password: '',
+    role: 'participant',
+    inviteCode: '',
     primary_field: 'AI/ML',
     skills: ['React', 'Python'],
     experience_level: 'Intermediate',
@@ -78,12 +80,65 @@ export function RegisterPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-xl relative z-10">
         <div className="glass-panel p-8 sm:p-10 rounded-[28px] border border-white/15 shadow-2xl backdrop-blur-2xl">
-          {/* Public Signup Role Notice */}
-          <div className="mb-6 p-4 bg-white/5 border border-white/15 rounded-2xl text-xs text-slate-300 flex items-start space-x-3">
-            <UserCheck className="w-5 h-5 flex-shrink-0 text-accentCyan mt-0.5" />
-            <div>
-              <span className="font-bold text-white">Public Registration Role:</span> Student / Participant. (Staff accounts are created by organizers).
+          {/* Role Selection Grid */}
+          <div className="mb-6 space-y-3">
+            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Select Your Registration Role *
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {[
+                { id: 'participant', label: 'Participant', icon: '👤', desc: 'Instant Signup' },
+                { id: 'mentor', label: 'Mentor', icon: '🎓', desc: 'Invite Required' },
+                { id: 'judge', label: 'Judge', icon: '⚖️', desc: 'Invite Required' },
+                { id: 'organizer', label: 'Organizer', icon: '👑', desc: 'Invite Required' },
+                { id: 'sponsor', label: 'Sponsor', icon: '💼', desc: 'Invite Required' },
+              ].map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, role: r.id })}
+                  className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
+                    formData.role === r.id
+                      ? 'bg-cyan-500/20 border-cyan-400 text-white shadow-lg shadow-cyan-500/20 ring-1 ring-cyan-400'
+                      : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-base">{r.icon}</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
+                      {r.desc}
+                    </span>
+                  </div>
+                  <div className="text-xs font-extrabold mt-2 text-white">{r.label}</div>
+                </button>
+              ))}
             </div>
+
+            {/* Conditional Staff Invite Code Field */}
+            {formData.role !== 'participant' && (
+              <div className="mt-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs space-y-2">
+                <div className="font-bold text-amber-300 flex items-center gap-1.5">
+                  <UserCheck className="w-4 h-4" />
+                  Staff Authorization Required for '{formData.role.toUpperCase()}' Role
+                </div>
+                <p className="text-slate-300 text-[11px]">
+                  Public registration for staff roles is protected. Enter your official Staff Invite Code below (e.g., <code className="text-amber-200 font-mono">HACKHUB-STAFF-2026</code>).
+                </p>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Staff Invite Code *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.inviteCode || ''}
+                    onChange={(e) => setFormData({ ...formData, inviteCode: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-black border border-amber-500/40 text-amber-200 rounded-xl font-mono text-xs focus:outline-none focus:border-amber-400 placeholder-slate-600"
+                    placeholder="e.g. HACKHUB-STAFF-2026"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (
