@@ -8,6 +8,7 @@ const Submission = require('../models/Submission');
 const MentorMessage = require('../models/MentorMessage');
 const ChatMessage = require('../models/ChatMessage');
 const EngagementEvent = require('../models/EngagementEvent');
+const Hackathon = require('../models/Hackathon');
 
 const DEMO_PASSWORD = 'Demo@2026!';
 
@@ -112,6 +113,7 @@ async function seed() {
     MentorMessage.deleteMany({}),
     ChatMessage.deleteMany({}),
     EngagementEvent.deleteMany({}),
+    Hackathon.deleteMany({}),
   ]);
 
   const hashedPassword = await bcrypt.hash(DEMO_PASSWORD, 10);
@@ -207,6 +209,132 @@ async function seed() {
   await EngagementEvent.create({ teamId: team1._id.toString(), userId: participant._id, eventType: 'check_in' });
   await EngagementEvent.create({ teamId: team1._id.toString(), userId: participant._id, eventType: 'chat_message' });
   await EngagementEvent.create({ teamId: team1._id.toString(), userId: participant._id, eventType: 'submission_create' });
+
+  // Seed Devfolio/Unstop Style Hackathons (Block 9)
+  await Hackathon.create([
+    {
+      title: 'HackHub Global AI Summit 2026',
+      slug: 'hackhub-global-ai-summit-2026',
+      tagline: 'Build autonomous AI agents, LLM toolchains, and intelligent workflows.',
+      description: 'Join over 2,500 developers worldwide in the premier global AI hackathon. Compete across AI/ML, Autonomous Agents, and Generative UI tracks.',
+      bannerUrl: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=1200&q=80',
+      status: 'Live',
+      startDate: new Date('2026-08-01'),
+      endDate: new Date('2026-08-05'),
+      prizePool: '$75,000 in Cash & Cloud Credits',
+      location: 'Virtual / Global Online',
+      tracks: ['AI/ML', 'Autonomous Agents', 'Data Science'],
+      sponsors: [
+        { name: 'Groq', logo: '⚡' },
+        { name: 'Google Cloud', logo: '☁️' },
+        { name: 'MongoDB', logo: '🍃' },
+      ],
+      schedule: [
+        { time: 'Day 1 - 09:00 AM', event: 'Opening Ceremony & Track Briefing' },
+        { time: 'Day 2 - 02:00 PM', event: 'AI Mentor Office Hours' },
+        { time: 'Day 4 - 11:59 PM', event: 'Final Code & Video Submission Deadline' },
+        { time: 'Day 5 - 04:00 PM', event: 'Live Judging & Winners Ceremony' },
+      ],
+      prizes: [
+        { title: '1st Place Grand Champion', reward: '$30,000 Cash + $10k Groq Credits', description: 'Overall top performing submission evaluated by AI & judges.' },
+        { title: '2nd Place Runner-Up', reward: '$15,000 Cash', description: 'Exceptional technical depth and user design.' },
+        { title: 'Best Autonomous AI Agent', reward: '$10,000 Track Prize', description: 'Highest score in agentic workflow execution.' },
+      ],
+      registeredUserIds: [participant._id],
+      featured: true,
+    },
+    {
+      title: 'Web3 & Decentralized Future 2026',
+      slug: 'web3-decentralized-future-2026',
+      tagline: 'Decentralized identity, smart contracts, and zero-knowledge privacy.',
+      description: 'A 48-hour intensive hackathon empowering developers to build open, censorship-resistant protocols.',
+      bannerUrl: 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=1200&q=80',
+      status: 'Upcoming',
+      startDate: new Date('2026-08-15'),
+      endDate: new Date('2026-08-18'),
+      prizePool: '$50,000 in USDC',
+      location: 'Hybrid / San Francisco, CA',
+      tracks: ['Web3', 'Security', 'FinTech'],
+      sponsors: [
+        { name: 'Ethereum Foundation', logo: '🔷' },
+        { name: 'Polygon', logo: '💜' },
+      ],
+      schedule: [
+        { time: 'Aug 15 - 10:00 AM', event: 'Hacking Begins & Team Formation' },
+        { time: 'Aug 17 - 05:00 PM', event: 'Submissions Close' },
+      ],
+      prizes: [
+        { title: 'Grand Winner', reward: '$25,000 USDC', description: 'Best overall Web3 application.' },
+      ],
+      registeredUserIds: [],
+      featured: true,
+    },
+    {
+      title: 'FinTech Innovation Challenge 2026',
+      slug: 'fintech-innovation-challenge-2026',
+      tagline: 'Next-gen algorithmic trading, micro-payments, and fraud prevention.',
+      description: 'Reimagine financial systems using high-speed analytics and AI-assisted fraud detection models.',
+      bannerUrl: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80',
+      status: 'Live',
+      startDate: new Date('2026-08-02'),
+      endDate: new Date('2026-08-07'),
+      prizePool: '$40,000 Prize Pool',
+      location: 'Virtual',
+      tracks: ['FinTech', 'AI/ML', 'CyberSecurity'],
+      sponsors: [
+        { name: 'Stripe', logo: '💳' },
+        { name: 'Plaid', logo: '📊' },
+      ],
+      schedule: [
+        { time: 'Day 1', event: 'API Keys Release & Kickoff' },
+        { time: 'Day 5', event: 'Submissions & Pitch Reviews' },
+      ],
+      prizes: [
+        { title: '1st Place FinTech', reward: '$20,000', description: 'Top financial product innovation.' },
+      ],
+      registeredUserIds: [participant._id],
+      featured: false,
+    },
+    {
+      title: 'CyberGuard Shield Hackathon 2025',
+      slug: 'cyberguard-shield-hackathon-2025',
+      tagline: 'Zero-day vulnerability scanning, automated patch management, and threat intelligence.',
+      description: 'Completed annual cybersecurity sprint focused on proactive defense and AI automated penetration audit tools.',
+      bannerUrl: 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=1200&q=80',
+      status: 'Ended',
+      startDate: new Date('2025-11-10'),
+      endDate: new Date('2025-11-13'),
+      prizePool: '$30,000 Awarded',
+      location: 'Austin, TX',
+      tracks: ['CyberSecurity', 'AI/ML'],
+      winningTeams: [
+        { rank: 1, teamName: 'Aegis Security Lab', projectTitle: 'AegisShield AI Audit', track: 'CyberSecurity', prize: '$15,000' },
+        { rank: 2, teamName: 'ZeroTrust Zeroes', projectTitle: 'Sentinel Zero-Day Detector', track: 'AI/ML', prize: '$10,000' },
+        { rank: 3, teamName: 'NetDefenders', projectTitle: 'PacketWatch Realtime Monitor', track: 'CyberSecurity', prize: '$5,000' },
+      ],
+      registeredUserIds: [],
+      featured: false,
+    },
+    {
+      title: 'HealthTech & BioAI Open 2025',
+      slug: 'healthtech-bioai-open-2025',
+      tagline: 'Diagnostic AI models, patient record privacy, and telemedicine portals.',
+      description: 'Global health tech hackathon resulting in 85 open-source medical diagnostics projects.',
+      bannerUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1200&q=80',
+      status: 'Ended',
+      startDate: new Date('2025-09-01'),
+      endDate: new Date('2025-09-04'),
+      prizePool: '$60,000 Awarded',
+      location: 'Boston, MA & Virtual',
+      tracks: ['Data Science', 'AI/ML'],
+      winningTeams: [
+        { rank: 1, teamName: 'BioScan AI', projectTitle: 'Retinal Scanner AI', track: 'AI/ML', prize: '$30,000' },
+        { rank: 2, teamName: 'MedPulse', projectTitle: 'EHR Fast Analytics', track: 'Data Science', prize: '$20,000' },
+      ],
+      registeredUserIds: [],
+      featured: false,
+    },
+  ]);
 
   console.log('===============================================================');
   console.log('🎉 HACKHUB AI DEMO DATABASE RESEEDED SUCCESSFULLY!');

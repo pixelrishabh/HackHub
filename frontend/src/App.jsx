@@ -23,6 +23,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ChatPage } from './pages/ChatPage';
 import { SponsorDashboardPage } from './pages/SponsorDashboardPage';
 import { CertificatesPage } from './pages/CertificatesPage';
+import { MarketplacePage } from './pages/MarketplacePage';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -49,6 +50,15 @@ function AnimatedRoutes() {
             element={
               <RoleGuard allowedRoles={['participant', 'organizer', 'judge', 'mentor', 'sponsor']}>
                 <DashboardPage />
+              </RoleGuard>
+            }
+          />
+
+          <Route
+            path="/dashboard/marketplace"
+            element={
+              <RoleGuard allowedRoles={['participant', 'organizer', 'judge', 'mentor', 'sponsor']}>
+                <MarketplacePage />
               </RoleGuard>
             }
           />

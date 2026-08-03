@@ -80,6 +80,13 @@ export function SponsorDashboardPage() {
 
   useEffect(() => {
     loadSponsorData();
+
+    // Block 11: Real-time Live Polling for Sponsor Dashboard
+    const pollInterval = setInterval(() => {
+      loadSponsorData();
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   const handleToggleBookmark = async (target_type, target_id) => {
@@ -177,6 +184,10 @@ export function SponsorDashboardPage() {
             <div className="inline-flex items-center space-x-2 px-3 py-1 bg-emerald-500/20 text-emerald-300 text-xs font-bold rounded-full border border-emerald-500/30">
               <Briefcase className="w-3.5 h-3.5" />
               <span>Sponsor & Talent Scout Portal</span>
+              <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                Live Sync
+              </span>
             </div>
             <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
               Talent Discovery & Project Scouting

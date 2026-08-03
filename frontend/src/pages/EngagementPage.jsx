@@ -39,6 +39,13 @@ export function EngagementPage() {
 
   useEffect(() => {
     loadEngagementData();
+
+    // Block 11: Real-time Live Polling for Organizer Engagement Leaderboard
+    const pollInterval = setInterval(() => {
+      loadEngagementData();
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   useEffect(() => {
@@ -82,6 +89,10 @@ export function EngagementPage() {
           <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 text-accentCyan text-xs font-semibold rounded-full border border-white/20 mb-3">
             <BarChart2 className="w-3.5 h-3.5" />
             <span>Live Hackathon Operating System</span>
+            <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live Sync
+            </span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight uppercase">
             Live Engagement <span className="text-glow text-accentCyan">Leaderboard</span>

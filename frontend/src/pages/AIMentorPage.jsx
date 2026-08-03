@@ -93,7 +93,30 @@ How can I help you build a winning submission today?`,
       }
     }
     loadTeamsAndHistory();
-  }, []);
+
+    // Block 11: Real-time Live Polling for Mentor Chat History
+    const pollInterval = setInterval(() => {
+      if (selectedTeamId) {
+        getChatHistory(selectedTeamId)
+          .then((histRes) => {
+            if (histRes.history && histRes.history.length > 0) {
+              const formatted = histRes.history.map((h) => ({
+                role: h.sender === 'user' ? 'user' : 'assistant',
+                mode: h.mode || 'developer',
+                text: h.content,
+                suggestions: h.suggestions || [],
+                fileAttachments: h.fileAttachments || [],
+                timestamp: new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              }));
+              setMessages(formatted);
+            }
+          })
+          .catch((e) => console.warn('Poll error:', e));
+      }
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
+  }, [selectedTeamId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -172,6 +195,10 @@ How can I help you build a winning submission today?`,
           <div className="inline-flex items-center space-x-2 px-3.5 py-1 bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-bold rounded-full">
             <Bot className="w-4 h-4 text-cyan-400 animate-pulse" />
             <span>Intent-Driven AI Teammate & Tool Engine</span>
+            <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live Sync
+            </span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight uppercase text-glow">
             AI Mentor OS

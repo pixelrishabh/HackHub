@@ -20,7 +20,8 @@ import {
   MessageSquare,
   Award,
   Briefcase,
-  Settings
+  Settings,
+  Globe,
 } from 'lucide-react';
 import { Modal } from './Modal';
 
@@ -59,22 +60,20 @@ export function Navbar() {
     email: '',
     password: '',
     role: 'judge',
-    skills: '[]',
   });
   const [staffLoading, setStaffLoading] = useState(false);
-  const [staffError, setStaffError] = useState('');
-  const [staffSuccess, setStaffSuccess] = useState('');
+  const [staffError, setStaffError] = useState(null);
+  const [staffSuccess, setStaffSuccess] = useState(null);
 
   const handleStaffSubmit = async (e) => {
     e.preventDefault();
     setStaffLoading(true);
-    setStaffError('');
-    setStaffSuccess('');
-
+    setStaffError(null);
+    setStaffSuccess(null);
     try {
       await createStaff(staffForm);
-      setStaffSuccess(`Staff account (${staffForm.role}) created successfully!`);
-      setStaffForm({ name: '', email: '', password: '', role: 'judge', skills: '[]' });
+      setStaffSuccess(`Successfully created ${staffForm.role} account!`);
+      setStaffForm({ name: '', email: '', password: '', role: 'judge' });
     } catch (err) {
       setStaffError(err.message || 'Failed to create staff account.');
     } finally {
@@ -85,13 +84,14 @@ export function Navbar() {
   const navLinks = isAuthenticated
     ? [
         { path: '/dashboard', label: 'Overview', icon: Sparkles },
+        { path: '/dashboard/marketplace', label: 'Marketplace', icon: Globe },
         { path: '/dashboard/profile', label: 'AI Profile', icon: User },
         { path: '/dashboard/chat', label: 'Team Chat', icon: MessageSquare },
         { path: '/dashboard/mentor', label: 'AI Mentor', icon: Bot },
         { path: '/dashboard/evaluation', label: isStaff ? 'Evaluations' : 'Submission', icon: CheckSquare },
         { path: '/dashboard/idea-validator', label: 'Idea Validator', icon: FileCode },
         { path: '/dashboard/engagement', label: 'Leaderboard', icon: BarChart2 },
-        { path: '/dashboard/analytics', label: 'Certs', icon: Award },
+        { path: '/dashboard/certificates', label: 'Certs', icon: Award },
         ...(role === 'sponsor' || isStaff ? [{ path: '/dashboard/sponsor', label: 'Sponsors', icon: Briefcase }] : []),
       ]
     : [];

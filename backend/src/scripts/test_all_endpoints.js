@@ -198,6 +198,15 @@ async function runTests() {
   });
   await testEndpoint('Get Sponsor Bookmarks', '/api/sponsor/bookmarks', 'GET', sponsorHeaders);
 
+  // 15. Hackathon Marketplace Endpoints (Block 9)
+  const hackathonsRes = await testEndpoint('Get All Hackathons', '/api/hackathons', 'GET');
+  const hackathonList = hackathonsRes?.hackathons || [];
+  if (hackathonList.length > 0) {
+    const firstHackathon = hackathonList[0];
+    await testEndpoint('Get Hackathon Detail', `/api/hackathons/${firstHackathon.id}`, 'GET');
+    await testEndpoint('Register for Hackathon', `/api/hackathons/${firstHackathon.id}/register`, 'POST', authHeaders);
+  }
+
   console.log('===============================================================');
   console.log(`📊 TEST SUITE SUMMARY: ${passCount} PASSED | ${failCount} FAILED out of ${passCount + failCount} tests.`);
   console.log('===============================================================');

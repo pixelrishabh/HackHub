@@ -43,7 +43,16 @@ export function ProjectEvalPage() {
       }
     }
     loadData();
-  }, []);
+
+    // Block 11: Real-time Live Polling for Judge Scoring Queue
+    const pollInterval = setInterval(() => {
+      if (selectedTeamId) {
+        fetchSubmissionData(selectedTeamId);
+      }
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
+  }, [selectedTeamId]);
 
   const fetchSubmissionData = async (teamId) => {
     try {
@@ -142,6 +151,10 @@ export function ProjectEvalPage() {
           <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/10 text-accentCyan text-xs font-semibold rounded-full border border-white/20 mb-3">
             <CheckSquare className="w-3.5 h-3.5" />
             <span>Project Submission & Evaluation Portal</span>
+            <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live Sync
+            </span>
           </div>
           <h1 className="text-3xl font-black text-white tracking-tight uppercase">Project Evaluation & Scorecard</h1>
           <p className="text-xs text-slate-300 max-w-2xl font-normal mt-1 leading-relaxed">
