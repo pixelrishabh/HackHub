@@ -97,13 +97,13 @@ export function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 bg-[#000002]/80 backdrop-blur-2xl border-b border-[#5044D4]/30 shadow-[0_4px_30px_rgba(13,8,86,0.5)] transition-all duration-300">
+      <header className="sticky top-0 z-50 bg-[#000002]/90 backdrop-blur-md border-b border-[#5044D4]/30 shadow-lg transition-all duration-300">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20 gap-2">
             {/* Brand Logo */}
             <Link to={isAuthenticated ? '/dashboard' : '/'} className="flex items-center space-x-2.5 group shrink-0">
               <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-[#0D0856] via-[#221297] to-[#5044D4] border border-[#AAACF3]/40 flex items-center justify-center text-[#F5F8FE] shadow-lg shadow-[#5044D4]/30 group-hover:scale-105 transition-all duration-300">
-                <Sparkles className="w-5 h-5 text-[#AAACF3] animate-pulse" />
+                <Sparkles className="w-5 h-5 text-[#AAACF3]" />
                 <div className="absolute inset-0 bg-[#5044D4]/30 blur-md rounded-xl opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
               <div className="flex flex-col">

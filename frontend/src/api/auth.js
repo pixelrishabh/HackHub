@@ -98,55 +98,38 @@ const DEMO_FALLBACK_USERS = {
 };
 
 export async function loginUser(email, password) {
-  try {
-    const data = await apiFetch('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+  // Clear any stale session first
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
 
-    if (data.token) {
-      localStorage.setItem('token', data.token);
-    }
-    if (data.user) {
-      localStorage.setItem('user', JSON.stringify(data.user));
-    }
+  const data = await apiFetch('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ email: String(email).trim().toLowerCase(), password }),
+  });
 
-    return data;
-  } catch (error) {
-    console.warn('[Auth] Live API login failed, attempting demo fallback:', error.message);
-    const normEmail = String(email || '').trim().toLowerCase();
-    const fallbackUser = DEMO_FALLBACK_USERS[normEmail] || DEMO_FALLBACK_USERS['demo.participant@hackhub.ai'];
-    const simulatedToken = 'token_' + btoa(fallbackUser.email);
-    localStorage.setItem('token', simulatedToken);
-    localStorage.setItem('user', JSON.stringify(fallbackUser));
-    return { token: simulatedToken, user: fallbackUser };
+  if (data.token) {
+    localStorage.setItem('token', data.token);
   }
+  if (data.user) {
+    localStorage.setItem('user', JSON.stringify(data.user));
+  }
+
+  return data;
 }
 
 export async function registerUser(userData) {
-  try {
-    const data = await apiFetch('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
+  // Clear any stale session first
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
 
-    if (data.token) localStorage.setItem('token', data.token);
-    if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
-    return data;
-  } catch (error) {
-    console.warn('[Auth] Live API register failed, falling back to local session:', error.message);
-    const fallbackUser = {
-      id: 'usr-' + Date.now(),
-      name: userData.name || 'Developer',
-      email: userData.email,
-      role: 'participant',
-      profile: { username: (userData.name || 'dev').toLowerCase(), experience_level: 'Intermediate' }
-    };
-    const simulatedToken = 'token_' + btoa(fallbackUser.email);
-    localStorage.setItem('token', simulatedToken);
-    localStorage.setItem('user', JSON.stringify(fallbackUser));
-    return { token: simulatedToken, user: fallbackUser };
-  }
+  const data = await apiFetch('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(userData),
+  });
+
+  if (data.token) localStorage.setItem('token', data.token);
+  if (data.user) localStorage.setItem('user', JSON.stringify(data.user));
+  return data;
 }
 
 export async function registerParticipant(userData) {
@@ -161,20 +144,35 @@ export async function createStaffUser(staffData) {
 }
 
 export async function getCurrentUser() {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    localStorage.removeItem('user');
+    return { user: null };
+  }
+
   try {
     const data = await apiFetch('/auth/me');
     if (data.user) {
       localStorage.setItem('user', JSON.stringify(data.user));
       return data;
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('[Auth] getCurrentUser session fetch failed:', e.message);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    return { user: null };
+  }
 
   const userStr = localStorage.getItem('user');
-  if (userStr) return { user: JSON.parse(userStr) };
+  if (userStr) {
+    try {
+      return { user: JSON.parse(userStr) };
+    } catch (e) {}
+  }
 
-  const defaultUser = DEMO_FALLBACK_USERS['demo.participant@hackhub.ai'];
-  localStorage.setItem('user', JSON.stringify(defaultUser));
-  return { user: defaultUser };
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  return { user: null };
 }
 
 export async function checkInUser() {

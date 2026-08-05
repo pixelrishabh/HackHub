@@ -82,6 +82,9 @@ async function callGroqLLM(prompt, systemInstruction = '') {
 /**
  * Invoke Gemini API (or Groq API) with strict prompt.
  */
+/**
+ * Invoke Gemini API (or Groq API) with strict prompt.
+ */
 async function callLLM(prompt, systemInstruction = '') {
   const groqResult = await callGroqLLM(prompt, systemInstruction);
   if (groqResult) return groqResult;
@@ -89,9 +92,9 @@ async function callLLM(prompt, systemInstruction = '') {
   const geminiKey = process.env.GEMINI_API_KEY;
   if (geminiKey && geminiKey !== 'your_gemini_api_key_here') {
     const candidateModels = [
-      'gemma-4-31b-it',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
       'gemini-2.0-flash',
-      'gemini-2.0-flash-lite',
     ];
 
     const genAI = new GoogleGenerativeAI(geminiKey);
@@ -109,8 +112,9 @@ async function callLLM(prompt, systemInstruction = '') {
           if (text) return text;
         } catch (err) {
           lastErr = err;
+          console.warn(`[AIService] Gemini API error for model '${modelName}':`, err.message);
           if (attempt === 1) {
-            await new Promise((r) => setTimeout(r, 1000));
+            await new Promise((r) => setTimeout(r, 800));
             continue;
           }
           break;
@@ -120,7 +124,7 @@ async function callLLM(prompt, systemInstruction = '') {
     throw lastErr || new Error('Gemini API call failed.');
   }
 
-  throw new Error('No valid LLM API key configured');
+  throw new Error('No valid LLM API key configured (Check GROQ_API_KEY or GEMINI_API_KEY)');
 }
 
 /**
@@ -154,13 +158,15 @@ async function matchTeamsWithAI(participants = []) {
  * AI Mentor Assistant Chat
  */
 async function generateMentorResponse({ teamId, userMessage, mode = 'developer', history = [], readmeContent = null }) {
-  const systemPrompt = `You are HackHub AI Mentor in ${mode.toUpperCase()} mode. Assist hackathon participants with code reviews, architecture, debugging, and pitch scoring. Be concise, actionable, and encouraging.`;
+  const systemPrompt = `You are HackHub AI Mentor in ${mode.toUpperCase()} mode. Assist hackathon participants with code reviews, architecture, debugging, and pitch scoring. Be concise, actionable, and specific to the user's question.`;
 
   try {
-    const rawResponse = await callLLM(userMessage, systemPrompt);
+    const fullPrompt = `${readmeContent ? `GitHub README Context:\n${readmeContent}\n\n` : ''}${history && history.length > 0 ? `Chat Context:\n${history.join('\n')}\n\n` : ''}User Question: ${userMessage}`;
+    const rawResponse = await callLLM(fullPrompt, systemPrompt);
     return rawResponse.trim();
   } catch (err) {
-    return `AI Mentor Guidance (${mode} mode): Prioritize completing your core MVP workflow first. Test clean error handling on all API calls and prepare a 2-minute working demo script for judges!`;
+    console.error('[AIService] Mentor LLM Error:', err.message);
+    throw err;
   }
 }
 

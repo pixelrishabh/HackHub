@@ -75,13 +75,27 @@ export function ChatPage() {
     }
   };
 
+  const fetchMessagesSilent = async (targetId) => {
+    if (!targetId || document.hidden) return;
+    try {
+      const res = await getMessages(targetId);
+      const newMsgs = res.messages || [];
+      setMessages((prev) => {
+        if (newMsgs.length > prev.length) {
+          setTimeout(scrollToBottom, 100);
+        }
+        return newMsgs;
+      });
+    } catch (e) {}
+  };
+
   const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     loadConversations();
     // Real-time synchronization interval (3 seconds)
     const interval = setInterval(() => {
-      if (selectedTarget) {
+      if (selectedTarget && !document.hidden) {
         fetchMessagesSilent(selectedTarget.id);
       }
     }, 3000);
@@ -103,19 +117,6 @@ export function ChatPage() {
     } finally {
       setLoadingMessages(false);
     }
-  };
-
-  const fetchMessagesSilent = async (targetId) => {
-    try {
-      const res = await getMessages(targetId);
-      const newMsgs = res.messages || [];
-      setMessages((prev) => {
-        if (newMsgs.length > prev.length) {
-          setTimeout(scrollToBottom, 100);
-        }
-        return newMsgs;
-      });
-    } catch (e) {}
   };
 
   const handleSendMessage = async (e) => {

@@ -59,7 +59,7 @@ async function chat(req, res) {
     });
   } catch (error) {
     console.error('[MentorController] chat Error:', error);
-    return res.status(500).json({ error: 'Failed to generate AI mentor response.' });
+    return res.status(500).json({ error: error.message || 'Failed to generate AI mentor response.' });
   }
 }
 
