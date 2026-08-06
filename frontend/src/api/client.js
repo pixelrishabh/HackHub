@@ -1,6 +1,10 @@
 // Production API Fetch Adapter connecting Frontend to Backend API (Render / Local)
 
-const BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5001/api').replace(/\/$/, '');
+let rawBaseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5001/api').replace(/\/$/, '');
+if (!rawBaseUrl.endsWith('/api')) {
+  rawBaseUrl = `${rawBaseUrl}/api`;
+}
+const BASE_URL = rawBaseUrl;
 
 export async function apiFetch(endpoint, options = {}) {
   const token = localStorage.getItem('token');
