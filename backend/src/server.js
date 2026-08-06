@@ -31,11 +31,11 @@ const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'http://localhost:3000,htt
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      if (!origin) return callback(null, true); // server-to-server / curl / same-origin
+      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.endsWith('.netlify.app')) {
         return callback(null, true);
       }
-      return callback(null, true); // Permissive local dev fallback
+      return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
   })
@@ -115,6 +115,9 @@ async function autoSeedIfEmpty() {
 
 // Start Server
 async function startServer() {
+  if (!process.env.JWT_SECRET || !process.env.JWT_SECRET.trim()) {
+    throw new Error('FATAL ERROR: JWT_SECRET environment variable is missing or empty.');
+  }
   await connectDB();
   await autoSeedIfEmpty();
   app.listen(PORT, () => {

@@ -28,12 +28,15 @@ async function register(req, res) {
 
     // Privileged Staff Roles Gate
     if (requestedRole !== 'participant') {
-      const validInviteCodes = ['HACKHUB-STAFF-2026', 'HACKHUB-VIP-2026', 'HACKHUB-ORGANIZER-2026'];
+      const validInviteCodes = (process.env.STAFF_INVITE_CODES || '')
+        .split(',')
+        .map((code) => code.trim().toUpperCase())
+        .filter(Boolean);
       const normInviteCode = String(inviteCode || '').trim().toUpperCase();
 
       if (!validInviteCodes.includes(normInviteCode)) {
         return res.status(403).json({
-          error: 'Invalid or missing Staff Invite Code. Registration for Organizer, Judge, Mentor, or Sponsor roles requires an authorized Invite Code (e.g. HACKHUB-STAFF-2026).',
+          error: 'Invalid or missing Staff Invite Code. Registration for Organizer, Judge, Mentor, or Sponsor roles requires an authorized Invite Code.',
         });
       }
     }
@@ -134,26 +137,13 @@ async function login(req, res) {
     }
 
     const normEmail = String(email).trim().toLowerCase();
-    let user = await User.findOne({ email: normEmail });
-
-    if (!user && normEmail.includes('@')) {
-      const username = normEmail.split('@')[0];
-      const aliases = ['@hackops.test', '@hackops.ai', '@hackhub.ai'];
-      for (const alias of aliases) {
-        user = await User.findOne({ email: `${username}${alias}` });
-        if (user) break;
-      }
-    }
+    const user = await User.findOne({ email: normEmail });
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }
 
-    let isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch && (password === 'Demo@2026!' || password === 'Password123!')) {
-      isMatch = true;
-    }
-
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }

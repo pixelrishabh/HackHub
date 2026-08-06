@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'hackhub_super_secret_jwt_key_2026_production_secure';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /**
  * Authenticate JWT Bearer Token and re-fetch user from DB on every request.
