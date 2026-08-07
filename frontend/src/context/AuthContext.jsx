@@ -78,7 +78,7 @@ export function AuthProvider({ children }) {
   }, [logout, parsePrimaryField]);
 
   const login = async (email, password) => {
-    const res = await loginUser({ email, password });
+    const res = await loginUser(email, password);
     if (res.token && res.user) {
       saveAuthSession(res.token, res.user);
     }

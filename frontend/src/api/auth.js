@@ -97,14 +97,22 @@ const DEMO_FALLBACK_USERS = {
   }
 };
 
-export async function loginUser(email, password) {
+export async function loginUser(emailInput, passwordInput) {
+  let email = emailInput;
+  let password = passwordInput;
+
+  if (typeof emailInput === 'object' && emailInput !== null) {
+    email = emailInput.email;
+    password = emailInput.password;
+  }
+
   // Clear any stale session first
   localStorage.removeItem('token');
   localStorage.removeItem('user');
 
   const data = await apiFetch('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ email: String(email).trim().toLowerCase(), password }),
+    body: JSON.stringify({ email: String(email || '').trim().toLowerCase(), password }),
   });
 
   if (data.token) {
