@@ -1,52 +1,57 @@
 # HackHub AI
 
-🔗 **Live Demo:** [hack-hub-sepia.vercel.app](https://hack-hub-sepia.vercel.app/)
-Frontend deployed on **Vercel**, backend API deployed on **Render**.
+🔗 **Live Demo:** [effulgent-marigold-e6a92d.netlify.app](https://effulgent-marigold-e6a92d.netlify.app/)
+Frontend deployed on **Netlify**, backend API deployed on **Render**, database on **MongoDB Atlas**.
 
-An AI-powered hackathon management platform that reimagines the hackathon experience for organizers, mentors, judges, and participants — AI team formation, an AI mentor assistant, AI project evaluation, idea validation, plagiarism detection, and live engagement tracking, all in one place.
+An AI-powered hackathon operating system that reimagines the hackathon experience for organizers, mentors, judges, sponsors, and participants — AI team formation, a grounded AI mentor assistant, AI project evaluation, idea validation, plagiarism detection, live engagement tracking, a certificate system, and a hackathon marketplace, all in one place.
 
 ## Features
 
-- **AI Team Matching** — automatically groups solo participants into balanced teams based on skills and interests, with an AI-generated rationale for each match
-- **Team Management** — create teams, browse open teams with filters, send/accept/reject join requests, leader can add members directly, capacity enforced server-side
-- **AI Mentor Assistant** — persistent per-team chat, aware of hackathon rules/schedule/tracks, can review a linked GitHub repo for unstuck-suggestions
-- **AI Project Evaluation** — structured AI scorecard (originality, technical depth, completeness, clarity) shown alongside a judge's manual score
-- **AI Idea Validation** — pre-submission feasibility, originality, and scope check with a suggested MVP cut
-- **AI Plagiarism / Similarity Detection** — embedding-based similarity scan across submissions, flags high-overlap pairs for organizer review
+- **AI Team Matching** — automatically groups solo participants into balanced teams based on skills, experience, and interests, with an AI-generated rationale for each match and a deterministic scoring pass on top of the LLM's proposal
+- **Team Management** — create teams, browse open teams with filters, send/accept/reject join requests, capacity enforced server-side
+- **AI Mentor Assistant** — persistent per-team chat with 4 specialized modes (Developer, Designer, Judge, Startup Advisor), grounded in the event's actual rules/schedule/tracks, can review a linked GitHub repo and generate a 9-metric AI scorecard
+- **AI Project Evaluation** — structured AI scorecard (originality, technical depth, completeness, clarity) shown alongside a judge's manual score — AI assists, a human always decides
+- **AI Idea Validation** — pre-submission feasibility, originality, and scope check with a suggested MVP cut given hours remaining
+- **AI Plagiarism / Similarity Detection** — embedding-based similarity scan across submissions (Gemini `text-embedding-004` + cosine similarity, TF-IDF fallback), flags high-overlap pairs for organizer review — never auto-rejected
 - **Live Engagement Dashboard** — weighted leaderboard from check-ins, chat activity, and submission updates
-- **Check-in & Streaks** — daily check-in with streak tracking and badges (Profile page only)
-- **Role-based Access** — participant, mentor, judge, organizer, sponsor roles with strict server-side enforcement (no client-side role selection at signup)
+- **Certificates** — organizers issue/upload certificates per participant per hackathon; participants download their own from a dedicated certificates view, with hash-based public verification
+- **Hackathon Marketplace** — browse live, upcoming, and past hackathons with filters by track/status, view details and results
+- **Check-in & Streaks** — daily check-in with streak tracking and badges
+- **Role-based Access** — participant, mentor, judge, organizer, sponsor roles with strict server-side enforcement; staff roles require an invite code and are never client-selectable at signup
 
 ## Tech Stack
 
-**Backend:** Node.js, Express, Prisma ORM, SQLite (dev) / PostgreSQL-ready, JWT auth, bcrypt, Helmet, express-rate-limit
-**Frontend:** React 18, React Router, Tailwind CSS, Vite, Lucide icons
-**AI:** Google Gemini (`@google/generative-ai`)
+**Backend:** Node.js, Express, MongoDB with Mongoose, JWT auth, bcryptjs, Helmet, express-rate-limit
+**Frontend:** React 18, React Router, Tailwind CSS, Vite, Framer Motion, React Three Fiber, Lucide icons
+**AI:** Google Gemini (`@google/generative-ai`, `text-embedding-004`) with Groq as a faster first-attempt provider and automatic fallback between them
 
 ## Project Structure
 
 ```
 BUILDATHON/
 ├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma       # Database models
-│   │   └── dev.db              # SQLite database (dev only, gitignored)
 │   ├── src/
-│   │   ├── config/             # DB client, hackathon rules/FAQ config
-│   │   ├── controllers/        # Route handlers (auth, team, mentor, submission, idea, engagement)
+│   │   ├── config/             # DB connection, hackathon rules/FAQ config
+│   │   ├── models/              # Mongoose schemas (User, Profile, Team, Submission,
+│   │   │                        #   MentorMessage, ChatMessage, EngagementEvent,
+│   │   │                        #   Certificate, Hackathon, SponsorBookmark)
+│   │   ├── controllers/        # Route handlers
 │   │   ├── middleware/         # JWT auth + role-based access control
-│   │   ├── routes/             # Express route definitions
-│   │   ├── services/           # AI service, GitHub service, similarity service
-│   │   ├── scripts/            # seed.js + test scripts
-│   │   └── server.js           # App entry point
+│   │   ├── routes/             # Express route definitions (auth, team, mentor, submission,
+│   │   │                        #   idea, profile, chat, certificate, hackathon, sponsor, analytics)
+│   │   ├── services/            # AI service (Groq + Gemini fallback), GitHub service
+│   │   ├── scripts/             # seed.js + test_all_endpoints.js
+│   │   └── server.js            # App entry point
 │   ├── .env.example
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── pages/               # Route-level pages (Dashboard, Profile, Teams, Mentor, etc.)
+│   │   ├── pages/                # Route-level pages (Dashboard, Profile, Teams, Mentor,
+│   │   │                          #   Marketplace, Certificates, etc.)
 │   │   ├── components/          # Reusable UI components
-│   │   ├── context/              # AuthContext
-│   │   └── api/                  # API call wrappers
+│   │   ├── context/               # AuthContext, LanguageContext
+│   │   ├── hooks/                 # useAuth, useFetch
+│   │   └── api/                    # API call wrappers, one file per resource
 │   ├── vite.config.js
 │   └── package.json
 └── README.md
@@ -55,8 +60,9 @@ BUILDATHON/
 ## Prerequisites
 
 - Node.js 18+ and npm
+- A [MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register) connection string (free tier available), or a local MongoDB instance
 - A [Google Gemini API key](https://aistudio.google.com/app/apikey) (free tier available)
-- Optionally an [Anthropic API key](https://console.anthropic.com/) if you're using Claude for any AI features
+- Optionally a [Groq API key](https://console.groq.com/keys) — used as a faster first-attempt AI provider before falling back to Gemini
 
 ## Local Setup
 
@@ -90,148 +96,64 @@ Edit `backend/.env`:
 PORT=5000
 NODE_ENV=development
 JWT_SECRET=replace_with_a_long_random_string
-DATABASE_URL="file:./dev.db"
+MONGODB_URI=your_mongodb_connection_string_here
 GEMINI_API_KEY=your_gemini_api_key_here
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+STAFF_INVITE_CODES=code1,code2,code3
 ALLOWED_ORIGIN=http://localhost:5173
 ```
 
-> ⚠️ `JWT_SECRET` has no default fallback — the server will refuse to start without it. Generate one with:
+> ⚠️ `JWT_SECRET` has no default fallback — the server refuses to start without it. Generate one with:
 > ```bash
 > node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 > ```
 
-> `ALLOWED_ORIGIN` must match wherever your frontend actually runs (Vite's default dev server is `http://localhost:5173` — adjust if yours differs).
+> ⚠️ `STAFF_INVITE_CODES` gates registration for mentor/judge/organizer/sponsor roles — participant registration never requires one. Generate your own codes rather than reusing any example values, and treat them as secrets.
 
-### 3. Set up the database
+### 3. Seed the database (optional but recommended)
 
 ```bash
 cd backend
-npx prisma generate
-npx prisma db push
-```
-
-This creates `prisma/dev.db` (SQLite) with all tables from `schema.prisma`.
-
-### 4. (Optional) Seed demo data
-
-```bash
 npm run seed
 ```
 
-Populates the database with sample participants, teams, and submissions for testing — uses clearly fake demo accounts, does not run automatically on server start.
+This creates one demo account per role (participant, mentor, judge, organizer, sponsor), a couple of sample teams, and some mentor chat history so the app isn't empty on first run. Credentials print to the console — do not reuse these in production.
 
-### 5. Run the backend
+### 4. Run locally
 
 ```bash
+# Terminal 1 — backend
 cd backend
 npm run dev
-```
 
-API server starts at `http://localhost:5000`.
-
-### 6. Run the frontend
-
-In a separate terminal:
-
-```bash
+# Terminal 2 — frontend
 cd frontend
 npm run dev
 ```
 
-Frontend runs at `http://localhost:5173` (Vite default).
+Frontend runs on `http://localhost:5173`, backend API on `http://localhost:5000`.
 
-### 7. Open the app
+### 5. Run the API test script (optional)
 
-Visit `http://localhost:5173` in your browser. Register a new account (defaults to `participant` role) or use seeded demo accounts if you ran the seed script.
-
-## Available Scripts
-
-**Backend** (`cd backend`)
-| Command | Description |
-|---|---|
-| `npm start` | Run server (production mode) |
-| `npm run dev` | Run server with auto-restart on file changes |
-| `npm run prisma:generate` | Regenerate Prisma client after schema changes |
-| `npm run prisma:push` | Push schema changes to the database |
-| `npm run seed` | Populate database with demo data |
-| `npm test` | Run `test_all_features.js` |
-
-Additional test scripts (run directly with `node`):
 ```bash
-node src/scripts/test_security_features.js
-node src/scripts/test_team_management.js
-node src/scripts/test_add_member.js
+cd backend
+npm run test:api
 ```
-
-**Frontend** (`cd frontend`)
-| Command | Description |
-|---|---|
-| `npm run dev` | Start Vite dev server |
-| `npm run build` | Production build |
-| `npm run preview` | Preview the production build locally |
-
-## API Overview
-
-Full endpoint reference: [`backend/docs/HackOps_AI_Postman_Collection.json`](backend/docs/HackOps_AI_Postman_Collection.json) — import into Postman for a complete, testable list of every route.
-
-Route groups:
-- `/api/auth` — register, login, staff creation, check-in
-- `/api/teams` — create, browse, join requests, add member, matching, compatibility
-- `/api/mentor` — chat + history
-- `/api/submissions` — create, evaluate, similarity check
-- `/api/ideas` — idea validation
-- `/api/engagement` — dashboard, per-team stats
-- `/api/notifications` — user notifications
-
-## Security Notes
-
-- Registration is server-locked to the `participant` role — staff accounts (organizer/mentor/judge/sponsor) can only be created by an existing organizer via a protected endpoint
-- All team/submission/mentor-history routes verify the requester is either a team member or has an appropriate staff role before returning data
-- Rate limiting is applied to `/login` and `/register`
-- CORS is restricted to an explicit origin allow-list (`ALLOWED_ORIGIN` in `.env`), not `*`
 
 ## Deployment
 
-This project is deployed with a split architecture: **frontend on Vercel**, **backend on Render**.
+- **Frontend** → Netlify. Build command: `npm run build`, publish directory: `dist`. Set `VITE_API_URL` to your deployed backend's `/api` URL.
+- **Backend** → Render. Build command: `npm install`, start command: `npm start`. Set all variables from `.env` above in Render's Environment dashboard — never commit real values to `.env.example`.
+- **Database** → MongoDB Atlas. Whitelist Render's outbound IPs (or `0.0.0.0/0` for simplicity during development only) in Atlas Network Access.
+- After any change to `JWT_SECRET` or `STAFF_INVITE_CODES` in production, redeploy the backend — this will invalidate all existing user sessions, which is expected.
 
-**Live app:** https://hack-hub-sepia.vercel.app/
+## Security Notes
 
-### Frontend (Vercel)
-- Root directory: `frontend/`
-- Build command: `npm run build`
-- Output directory: `dist`
-- Environment variable required in Vercel project settings:
-  ```
-  VITE_API_URL=<your-render-backend-url>/api
-  ```
-
-### Backend (Render)
-- Root directory: `backend/`
-- Build command: `npm install && npx prisma generate && npx prisma db push`
-- Start command: `npm start`
-- Environment variables required in Render project settings (same keys as `.env.example`):
-  ```
-  PORT=5000
-  NODE_ENV=production
-  JWT_SECRET=<a long random string>
-  DATABASE_URL=<your production database URL>
-  GEMINI_API_KEY=<your Gemini API key>
-  ANTHROPIC_API_KEY=<your Anthropic API key, if used>
-  ALLOWED_ORIGIN=https://hack-hub-sepia.vercel.app
-  ```
-
-> ⚠️ Render's free tier uses ephemeral disk storage — if `DATABASE_URL` still points to a local SQLite file (`file:./dev.db`), **all data will be wiped on every redeploy or restart**. For a persistent production database, switch to a hosted Postgres database (e.g. Supabase, Neon, or Render's own managed Postgres) — see the section below.
-
-> Make sure `ALLOWED_ORIGIN` on Render exactly matches your Vercel domain (including `https://`), or the frontend will get CORS errors when calling the API.
-
-## Switching to PostgreSQL / Supabase
-
-The schema is Postgres-compatible. To switch:
-1. Update `provider` in `backend/prisma/schema.prisma` from `sqlite` to `postgresql`
-2. Set `DATABASE_URL` (and `DIRECT_URL` if using Supabase's connection pooler) in `.env`
-3. Run `npx prisma migrate dev --name init_postgres`
+- Roles are always enforced server-side; the client never determines what a user is authorized to do.
+- Passwords are hashed with bcryptjs; the app re-fetches the user from the database on every authenticated request rather than trusting a JWT payload blindly.
+- CORS is restricted to an explicit origin allow-list plus `*.vercel.app` and `*.netlify.app` — no wildcard, no unconditional fallback.
+- AI-generated plagiarism flags and evaluation scores are always surfaced for human review, never used to auto-reject or auto-score a submission.
 
 ## License
 
-ISC
+Specify your license here (MIT recommended for a portfolio project).
