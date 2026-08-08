@@ -18,12 +18,17 @@ export function EngagementPage() {
   const [dashboardData, setDashboardData] = useState([]);
   const [totalTeams, setTotalTeams] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [actionMessage, setActionMessage] = useState('');
 
-  const loadEngagementData = async () => {
-    setLoading(true);
+  const loadEngagementData = async (isInitial = false) => {
+    if (isInitial) {
+      setLoading(true);
+    } else {
+      setIsRefreshing(true);
+    }
     setError('');
     try {
       const res = await getEngagementDashboard();
@@ -34,15 +39,16 @@ export function EngagementPage() {
       setError(err.message || 'Failed to fetch engagement dashboard.');
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
-    loadEngagementData();
+    loadEngagementData(true);
 
     // Block 11: Real-time Live Polling for Organizer Engagement Leaderboard
     const pollInterval = setInterval(() => {
-      loadEngagementData();
+      loadEngagementData(false);
     }, 5000);
 
     return () => clearInterval(pollInterval);
@@ -90,8 +96,8 @@ export function EngagementPage() {
             <BarChart2 className="w-3.5 h-3.5" />
             <span>Live Hackathon Operating System</span>
             <span className="ml-2 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Live Sync
+              <span className={`w-1.5 h-1.5 rounded-full bg-emerald-400 ${isRefreshing ? 'animate-ping' : 'animate-pulse'}`} />
+              {isRefreshing ? 'Syncing...' : 'Live Sync'}
             </span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight uppercase">
@@ -103,11 +109,12 @@ export function EngagementPage() {
         </div>
 
         <button
-          onClick={loadEngagementData}
-          className="inline-flex items-center justify-center space-x-2 px-6 py-3.5 bg-white text-black font-extrabold text-xs rounded-xl shadow-xl hover:bg-slate-100 transition-all flex-shrink-0"
+          onClick={() => loadEngagementData(false)}
+          disabled={isRefreshing}
+          className="inline-flex items-center justify-center space-x-2 px-6 py-3.5 bg-white text-black font-extrabold text-xs rounded-xl shadow-xl hover:bg-slate-100 transition-all flex-shrink-0 disabled:opacity-75"
         >
-          <RefreshCw className="w-4 h-4 text-black" />
-          <span>Refresh Pulse Data</span>
+          <RefreshCw className={`w-4 h-4 text-black ${isRefreshing ? 'animate-spin' : ''}`} />
+          <span>{isRefreshing ? 'Updating...' : 'Refresh Pulse Data'}</span>
         </button>
       </div>
 

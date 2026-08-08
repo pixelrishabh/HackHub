@@ -13,7 +13,7 @@ export default {
         glassBorder: "rgba(255, 255, 255, 0.12)",
         glowWhite: "#FFFFFF",
         glowCyan: "#D9F6FF",
-        accentCyan: "#AEEBFF",
+        accentCyan: "var(--accent-color, #00E5FF)",
         background: "#050505",
         surface: "#0a0a0a",
         primary: {

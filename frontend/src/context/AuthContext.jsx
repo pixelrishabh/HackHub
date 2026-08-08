@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { loginUser, registerParticipant, createStaffUser, getCurrentUser } from '../api/auth';
+import { loginUser, registerUser, createStaffUser, getCurrentUser } from '../api/auth';
 
 export const AuthContext = createContext(null);
 
@@ -67,15 +67,22 @@ export function AuthProvider({ children }) {
             localStorage.setItem('primaryField', field);
           }
         } catch (err) {
-          console.error('Session hydration failed:', err);
-          logout();
+          console.error('Session hydration warning:', err);
         }
       }
       setLoading(false);
     }
 
     hydrate();
-  }, [logout, parsePrimaryField]);
+  }, [parsePrimaryField]);
+
+  // Apply dynamic accent color to document root
+  useEffect(() => {
+    const color = user?.profile?.accentColor || user?.accentColor;
+    if (color) {
+      document.documentElement.style.setProperty('--accent-color', color);
+    }
+  }, [user]);
 
   const login = async (email, password) => {
     const res = await loginUser(email, password);
@@ -96,7 +103,7 @@ export function AuthProvider({ children }) {
       interests: combinedInterests,
     };
 
-    const res = await registerParticipant(payload);
+    const res = await registerUser(payload);
     if (res.token && res.user) {
       saveAuthSession(res.token, res.user, selectedField);
     }

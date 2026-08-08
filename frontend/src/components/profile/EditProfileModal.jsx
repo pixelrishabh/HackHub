@@ -167,6 +167,9 @@ export function EditProfileModal({
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (field === 'accentColor' && value) {
+      document.documentElement.style.setProperty('--accent-color', value);
+    }
   };
 
   const handleNestedChange = (parent, child, value) => {
